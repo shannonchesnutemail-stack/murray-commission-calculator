@@ -708,7 +708,6 @@ function renderMonthly(){
   updateGrandTotalAll();
 }
 
-renderMonthly();
 
 /* ---------- Expense reimbursements (with receipt photo attachment) ---------- */
 
@@ -858,7 +857,6 @@ function updateGrandTotalAll(){
   document.getElementById("grand-total-all").textContent = fmt(commissionTotal + expenseTotal);
 }
 
-renderExpenses();
 
 /* ---------- PDF Export (final invoice) ---------- */
 
@@ -1095,6 +1093,10 @@ function exportPDF(){
 
   showToast(`Generated "${filenameBase}.pdf".`, false);
 }
+
+// Initial render (after all state variables and functions are defined)
+renderMonthly();
+renderExpenses();
 </script>
 </body>
 </html>
