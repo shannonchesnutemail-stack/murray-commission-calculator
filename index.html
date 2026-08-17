@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Referral Commission Calculator — Section 4.2</title>
+<style>
+  :root{
+    --ink:#222; --muted:#6b6b6b; --line:#d9d9d9; --panel:#f7f7f7;
+    --accent:#2b2b2b; --good:#2f6f4e; --bad:#8a2b2b; --white:#fff;
+  }
+  *{box-sizing:border-box;}
+  body{
+    font-family:"Calibri","Segoe UI",Arial,sans-serif;
+    background:#eeeeee; color:var(--ink); margin:0; padding:0;
+  }
+  .wrap{max-width:900px;margin:0 auto;padding:32px 20px 60px;}
+  header{text-align:center;margin-bottom:28px;}
+  header .kicker{color:var(--muted);font-size:13px;letter-spacing:.08em;text-transform:uppercase;margin-bottom:6px;}
+  header h1{font-size:26px;margin:0 0 6px;}
+  header p{color:var(--muted);font-size:14px;margin:0;}
+  .tabs{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:20px;border-bottom:1px solid var(--line);}
+  .tab{
+    padding:10px 16px;cursor:pointer;font-size:14px;font-weight:600;color:var(--muted);
+    border:1px solid transparent;border-bottom:none;border-radius:6px 6px 0 0;
+  }
+  .tab.active{color:var(--ink);background:var(--white);border-color:var(--line);border-bottom:1px solid var(--white);margin-bottom:-1px;}
+  .panel{background:var(--white);border:1px solid var(--line);border-radius:0 6px 6px 6px;padding:24px;display:none;}
+  .panel.active{display:block;}
+  .field{margin-bottom:16px;}
+  .field label{display:block;font-size:13px;font-weight:600;margin-bottom:6px;color:var(--ink);}
+  .field .hint{font-size:12px;color:var(--muted);margin-top:4px;}
+  .field input, .field select{
+    width:100%;padding:9px 10px;font-size:14px;border:1px solid var(--line);border-radius:5px;background:#fff;
+  }
+  .row{display:flex;gap:16px;flex-wrap:wrap;}
+  .row .field{flex:1;min-width:200px;}
+  .checkbox-row{display:flex;align-items:center;gap:8px;margin-bottom:16px;}
+  .checkbox-row input{width:auto;}
+  .checkbox-row label{font-size:13px;font-weight:600;margin:0;}
+  .result{
+    margin-top:20px;padding:18px;background:var(--panel);border:1px solid var(--line);border-radius:6px;
+  }
+  .result h3{margin:0 0 12px;font-size:14px;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);}
+  .line{display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px dashed var(--line);font-size:14px;}
+  .line:last-child{border-bottom:none;}
+  .line .amt{font-weight:600;}
+  .total{
+    display:flex;justify-content:space-between;margin-top:12px;padding-top:12px;border-top:2px solid var(--ink);
+    font-size:18px;font-weight:700;
+  }
+  .flag{margin-top:10px;padding:10px 12px;border-radius:5px;font-size:13px;}
+  .flag.ok{background:#eaf4ee;color:var(--good);border:1px solid #c7e3d2;}
+  .flag.no{background:#f7eaea;color:var(--bad);border:1px solid #e6c6c6;}
+  footer{margin-top:30px;font-size:12px;color:var(--muted);text-align:center;line-height:1.6;}
+  .clause{font-size:12px;color:var(--muted);background:var(--panel);border-left:3px solid var(--line);padding:10px 12px;margin-bottom:18px;border-radius:0 5px 5px 0;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="kicker">Independent Contractor Agreement — Section 4.2</div>
+    <h1>Referral Commission Calculator</h1>
+    <p>Model referral bonus scenarios for each service line under the current referral structure.</p>
+  </header>
+
+  <div class="tabs">
+    <div class="tab active" data-tab="roofing">Roofing Services</div>
+    <div class="tab" data-tab="inspection">Inspection Services</div>
+    <div class="tab" data-tab="customhome">Custom Home</div>
+    <div class="tab" data-tab="remodel">Remodel</div>
+  </div>
+
+  <!-- ROOFING -->
+  <div class="panel active" id="roofing">
+    <div class="clause">Flat $50 per inspection scheduled · Flat $100 per approved signed contract + 3% of contract price upon completion (only if contract ≥ $10,000) · Flat $200 per signed maintenance contract.</div>
+
+    <div class="checkbox-row"><input type="checkbox" id="r-inspScheduled" checked><label for="r-inspScheduled">Inspection scheduled</label></div>
+    <div class="checkbox-row"><input type="checkbox" id="r-contractApproved" checked><label for="r-contractApproved">Contract approved / signed</label></div>
+    <div class="row">
+      <div class="field">
+        <label>Contracted job price ($)</label>
+        <input type="number" id="r-price" value="15000" min="0" step="100">
+        <div class="hint">3% completion bonus only applies if this is $10,000 or more.</div>
+      </div>
+      <div class="field">
+        <label>Job completed?</label>
+        <select id="r-completed">
+          <option value="yes" selected>Yes — job completed</option>
+          <option value="no">Not yet completed</option>
+        </select>
+      </div>
+    </div>
+    <div class="checkbox-row"><input type="checkbox" id="r-maintenance"><label for="r-maintenance">Maintenance contract signed (from this lead)</label></div>
+    <button onclick="calcRoofing()" style="margin-top:6px;padding:10px 18px;border:1px solid var(--ink);background:var(--ink);color:#fff;border-radius:5px;cursor:pointer;font-weight:600;">Calculate</button>
+    <div class="result" id="r-result" style="display:none;"></div>
+  </div>
+
+  <!-- INSPECTION -->
+  <div class="panel" id="inspection">
+    <div class="clause">Flat $100 per closed inspection, paid at completion. If a single inspection's combined revenue exceeds $2,000, Contractor receives 10% of that revenue <strong>instead of</strong> the $100 flat fee (whichever tier applies, not both).</div>
+    <div class="row">
+      <div class="field">
+        <label>Inspection revenue ($)</label>
+        <input type="number" id="i-revenue" value="1500" min="0" step="50">
+      </div>
+    </div>
+    <button onclick="calcInspection()" style="padding:10px 18px;border:1px solid var(--ink);background:var(--ink);color:#fff;border-radius:5px;cursor:pointer;font-weight:600;">Calculate</button>
+    <div class="result" id="i-result" style="display:none;"></div>
+  </div>
+
+  <!-- CUSTOM HOME -->
+  <div class="panel" id="customhome">
+    <div class="clause">Flat $200 upon verified signed custom home contract, payable at first draw · If contract price exceeds $500,000 (excluding land and change orders), add 10 basis points (0.10%) of the initial contract price.</div>
+    <div class="row">
+      <div class="field">
+        <label>Signed custom home contract price ($, excl. land/change orders)</label>
+        <input type="number" id="c-price" value="650000" min="0" step="1000">
+      </div>
+    </div>
+    <button onclick="calcCustomHome()" style="padding:10px 18px;border:1px solid var(--ink);background:var(--ink);color:#fff;border-radius:5px;cursor:pointer;font-weight:600;">Calculate</button>
+    <div class="result" id="c-result" style="display:none;"></div>
+  </div>
+
+  <!-- REMODEL -->
+  <div class="panel" id="remodel">
+    <div class="clause">2% of project price · Eligible only upon project completion · Project must be at least $100,000 to qualify.</div>
+    <div class="row">
+      <div class="field">
+        <label>Remodel project price ($)</label>
+        <input type="number" id="m-price" value="150000" min="0" step="1000">
+      </div>
+      <div class="field">
+        <label>Project completed?</label>
+        <select id="m-completed">
+          <option value="yes" selected>Yes — completed</option>
+          <option value="no">Not yet completed</option>
+        </select>
+      </div>
+    </div>
+    <button onclick="calcRemodel()" style="padding:10px 18px;border:1px solid var(--ink);background:var(--ink);color:#fff;border-radius:5px;cursor:pointer;font-weight:600;">Calculate</button>
+    <div class="result" id="m-result" style="display:none;"></div>
+  </div>
+
+  <footer>
+    Figures reflect the referral bonus schedule as written in Section 4.2 of the Independent Contractor Agreement.
+    This calculator is a planning tool only — final payout is governed by the signed Agreement and Company's verification of each qualifying sale.
+  </footer>
+</div>
+
+<script>
+const fmt = (n) => "$" + n.toLocaleString("en-US", {minimumFractionDigits:2, maximumFractionDigits:2});
+
+function switchTab(tabName){
+  document.querySelectorAll(".tab").forEach(t=>t.classList.toggle("active", t.dataset.tab===tabName));
+  document.querySelectorAll(".panel").forEach(p=>p.classList.toggle("active", p.id===tabName));
+}
+document.querySelectorAll(".tab").forEach(t=>t.addEventListener("click", ()=>switchTab(t.dataset.tab)));
+
+function renderResult(elId, lines, total, flags){
+  const el = document.getElementById(elId);
+  el.style.display = "block";
+  let html = "<h3>Estimated Referral Payout</h3>";
+  lines.forEach(l=>{
+    html += `<div class="line"><span>${l.label}</span><span class="amt">${l.amount}</span></div>`;
+  });
+  html += `<div class="total"><span>Total Estimated Bonus</span><span>${fmt(total)}</span></div>`;
+  (flags||[]).forEach(f=>{
+    html += `<div class="flag ${f.ok?'ok':'no'}">${f.text}</div>`;
+  });
+  el.innerHTML = html;
+}
+
+function calcRoofing(){
+  const inspScheduled = document.getElementById("r-inspScheduled").checked;
+  const contractApproved = document.getElementById("r-contractApproved").checked;
+  const price = parseFloat(document.getElementById("r-price").value) || 0;
+  const completed = document.getElementById("r-completed").value === "yes";
+  const maintenance = document.getElementById("r-maintenance").checked;
+
+  let total = 0, lines = [], flags = [];
+
+  if (inspScheduled){
+    total += 50;
+    lines.push({label:"Inspection scheduled (flat)", amount: fmt(50)});
+  }
+  if (contractApproved){
+    total += 100;
+    lines.push({label:"Contract approved/signed (flat)", amount: fmt(100)});
+  }
+  if (contractApproved && completed){
+    if (price >= 10000){
+      const pct = price * 0.03;
+      total += pct;
+      lines.push({label:`Completion bonus — 3% of ${fmt(price)}`, amount: fmt(pct)});
+      flags.push({ok:true, text:`Contract price meets the $10,000 minimum — 3% completion bonus applies.`});
+    } else {
+      flags.push({ok:false, text:`Contract price is below the $10,000 minimum — 3% completion bonus does NOT apply.`});
+    }
+  } else if (contractApproved && !completed){
+    flags.push({ok:false, text:`Job not yet completed — 3% completion bonus not yet earned.`});
+  }
+  if (maintenance){
+    total += 200;
+    lines.push({label:"Maintenance contract signed (flat)", amount: fmt(200)});
+  }
+  if (!inspScheduled && !contractApproved && !maintenance){
+    flags.push({ok:false, text:"No qualifying milestones selected."});
+  }
+  flags.push({ok:true, text:"Any additional services generated by this lead are paid at the current agreed rate for that service line (not calculated here)."});
+
+  renderResult("r-result", lines, total, flags);
+}
+
+function calcInspection(){
+  const revenue = parseFloat(document.getElementById("i-revenue").value) || 0;
+  let total = 0, lines = [], flags = [];
+
+  if (revenue > 2000){
+    total = revenue * 0.10;
+    lines.push({label:`Revenue tier — 10% of ${fmt(revenue)} (replaces flat fee)`, amount: fmt(total)});
+    flags.push({ok:true, text:"Revenue exceeds $2,000 — Contractor receives 10% of revenue instead of the $100 flat fee."});
+  } else {
+    total = 100;
+    lines.push({label:"Closed inspection (flat, at completion)", amount: fmt(100)});
+    flags.push({ok:true, text:"Revenue is $2,000 or less — the $100 flat fee applies."});
+  }
+  flags.push({ok:true, text:"Any additional services generated by this lead are paid at the current agreed rate for that service line (not calculated here)."});
+
+  renderResult("i-result", lines, total, flags);
+}
+
+function calcCustomHome(){
+  const price = parseFloat(document.getElementById("c-price").value) || 0;
+  let total = 200;
+  let lines = [{label:"Signed custom home contract (flat, at first draw)", amount: fmt(200)}];
+  let flags = [];
+
+  if (price > 500000){
+    const bps = price * 0.0010; // 10 basis points = 0.10%
+    total += bps;
+    lines.push({label:`Basis-point bonus — 10 bp of ${fmt(price)}`, amount: fmt(bps)});
+    flags.push({ok:true, text:"Contract price exceeds $500,000 — 10 basis point bonus applies."});
+  } else {
+    flags.push({ok:false, text:"Contract price is $500,000 or less — basis-point bonus does not apply."});
+  }
+
+  renderResult("c-result", lines, total, flags);
+}
+
+function calcRemodel(){
+  const price = parseFloat(document.getElementById("m-price").value) || 0;
+  const completed = document.getElementById("m-completed").value === "yes";
+  let total = 0, lines = [], flags = [];
+
+  if (price < 100000){
+    flags.push({ok:false, text:"Project price is below the $100,000 minimum — remodel bonus does not qualify."});
+  } else if (!completed){
+    flags.push({ok:false, text:"Project not yet completed — remodel bonus is not yet payable (eligible upon completion)."});
+  } else {
+    const pct = price * 0.02;
+    total += pct;
+    lines.push({label:`Remodel bonus — 2% of ${fmt(price)}`, amount: fmt(pct)});
+    flags.push({ok:true, text:"Project meets the $100,000 minimum and is completed — 2% bonus applies."});
+  }
+
+  renderResult("m-result", lines, total, flags);
+}
+
+// initial calc on load
+calcRoofing();
+</script>
+</body>
+</html>
