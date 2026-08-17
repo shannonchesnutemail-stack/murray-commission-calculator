@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Referral Commission Calculator — Section 4.2</title>
+<title>Revup Marketing — Invoice Builder</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
 <style>
@@ -66,6 +66,7 @@
   table.entries td.qty{text-align:center;}
   table.entries td.client{font-style:italic;color:var(--muted);}
   table.entries td.act{text-align:right;white-space:nowrap;}
+  table.entries td.thumb img{width:44px;height:44px;object-fit:cover;border-radius:4px;border:1px solid var(--line);}
   .edit-btn{background:none;border:none;color:var(--ink);cursor:pointer;font-size:12px;font-weight:600;margin-right:10px;text-decoration:underline;}
   .remove-btn{background:none;border:none;color:var(--bad);cursor:pointer;font-size:12px;font-weight:600;}
   .grand-total{
@@ -79,27 +80,72 @@
   .subcard .val{font-size:18px;font-weight:700;margin-top:4px;}
   .empty-state{color:var(--muted);font-size:13px;padding:16px 0;text-align:center;}
   .divider{border:0;border-top:1px solid var(--line);margin:28px 0 20px;}
+  .section-heading{font-size:16px;font-weight:700;margin:0 0 6px;}
+  .biz-card{background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:16px;margin-bottom:20px;}
+  .biz-card .biz-name{font-size:18px;font-weight:700;margin:0 0 10px;}
+  .billto{font-size:13px;color:var(--muted);margin-bottom:16px;}
+  .billto b{color:var(--ink);}
 </style>
 </head>
 <body>
 <div class="wrap">
   <header>
     <div class="kicker">Independent Contractor Agreement — Section 4.2</div>
-    <h1>Referral Commission Calculator</h1>
-    <p>Model referral bonus scenarios and projected monthly income for each service line under the current referral structure.</p>
+    <h1>Revup Marketing — Commission Invoice Builder</h1>
+    <p>Build a monthly referral commission and expense reimbursement invoice, then export it as a final PDF to submit to Murray Custom Homes, Roofing &amp; Inspections.</p>
   </header>
 
   <div class="tabs">
-    <div class="tab active" data-tab="monthly">Monthly Projection</div>
+    <div class="tab active" data-tab="monthly">Build Invoice</div>
     <div class="tab" data-tab="roofing">Roofing Services</div>
     <div class="tab" data-tab="inspection">Inspection Services</div>
     <div class="tab" data-tab="customhome">Custom Home</div>
     <div class="tab" data-tab="remodel">Remodel</div>
   </div>
 
-  <!-- MONTHLY PROJECTION -->
+  <!-- BUILD INVOICE -->
   <div class="panel active" id="monthly">
-    <div class="clause">Add every commission event that applies for the month. Use the Quantity field for repeated identical events (e.g., 10 inspections scheduled at once). For Custom Home entries, the $200 signing bonus and the 10bp bonus are tracked separately since they're often earned in different months (signing vs. first draw). Give each entry a "Client / Reference" note so you can match it back to the right client when invoicing — you can add or edit that note any time. Every entry can be edited or removed afterward.</div>
+
+    <div class="biz-card">
+      <div class="biz-name">Revup Marketing</div>
+      <div class="row">
+        <div class="field">
+          <label>Phone Number</label>
+          <input type="text" id="biz-phone" placeholder="[Your Phone Number]">
+        </div>
+        <div class="field">
+          <label>Address</label>
+          <input type="text" id="biz-address" placeholder="[Your Street Address, City, State ZIP]">
+        </div>
+        <div class="field">
+          <label>Website</label>
+          <input type="text" id="biz-website" placeholder="[Your Website Address]">
+        </div>
+      </div>
+      <div class="hint">These appear on the invoice header. Fill them in once — they'll stay for future invoices in this session.</div>
+    </div>
+
+    <div class="billto">Billed to: <b>Murray Custom Homes, Roofing &amp; Inspections</b></div>
+
+    <div class="row">
+      <div class="field">
+        <label>Invoice Month / Period</label>
+        <input type="month" id="sv-month">
+      </div>
+      <div class="field">
+        <label>Invoice Date</label>
+        <input type="date" id="inv-date">
+      </div>
+      <div class="field">
+        <label>Invoice Number (optional)</label>
+        <input type="text" id="inv-number" placeholder="e.g., INV-2026-08">
+      </div>
+    </div>
+
+    <hr class="divider">
+
+    <div class="section-heading">Referral Commission Line Items</div>
+    <div class="clause">Add every commission event that applies for the month. Use the Quantity field for repeated identical events (e.g., 10 inspections scheduled at once). For Custom Home entries, the $200 signing bonus and the 10bp bonus are tracked separately since they're often earned in different months (signing vs. first draw). Give each entry a "Client / Reference" note so you can match it back to the right client on the invoice. Every entry can be edited or removed afterward.</div>
 
     <div class="row">
       <div class="field" style="flex:0 0 200px;">
@@ -124,34 +170,66 @@
       </thead>
       <tbody id="mp-tbody"></tbody>
     </table>
-    <div id="mp-empty" class="empty-state">No entries yet — add a commission event above to start projecting this month's income.</div>
+    <div id="mp-empty" class="empty-state">No commission entries yet — add one above.</div>
 
     <div class="subgrid" id="mp-subgrid"></div>
 
     <div class="grand-total">
       <div>
-        Projected Monthly Commission Income
-        <span class="sub">Sum of all entries added above</span>
+        Referral Commission Subtotal
+        <span class="sub">Sum of all commission entries above</span>
       </div>
       <div id="mp-grandtotal">$0.00</div>
     </div>
 
     <hr class="divider">
 
-    <h3 style="margin:0 0 10px;font-size:15px;">Export for Invoicing</h3>
-    <div class="clause">Select the invoice month (used for the PDF header and filename). Each entry's own Client / Reference note will appear next to its line in the exported PDF, so you can match every payout back to the specific client when preparing invoices.</div>
+    <div class="section-heading">Expense Reimbursement</div>
+    <div class="clause">Per the Agreement, reimbursable expenses (client dining, referral gifts, mileage, etc.) require the date, business purpose, and — for meals — attendee names, plus a receipt. Attach a photo of each receipt below; it will be included with the invoice PDF.</div>
+
+    <div class="field" style="max-width:220px;">
+      <button class="btn" onclick="openExpenseForm()">+ Add Expense</button>
+    </div>
+
+    <div id="ex-form" style="display:none;background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:16px;margin-bottom:8px;"></div>
+
+    <table class="entries" id="ex-table">
+      <thead>
+        <tr><th>Date</th><th>Category</th><th>Business Purpose / Attendees</th><th>Receipt</th><th style="text-align:right;">Amount</th><th></th></tr>
+      </thead>
+      <tbody id="ex-tbody"></tbody>
+    </table>
+    <div id="ex-empty" class="empty-state">No expenses added yet.</div>
+
+    <div class="grand-total" style="background:#555;">
+      <div>
+        Expense Reimbursement Subtotal
+        <span class="sub">Sum of all expenses above</span>
+      </div>
+      <div id="ex-grandtotal">$0.00</div>
+    </div>
+
+    <hr class="divider">
+
+    <div class="grand-total">
+      <div>
+        Total Amount Due
+        <span class="sub">Referral commissions + expense reimbursement</span>
+      </div>
+      <div id="grand-total-all">$0.00</div>
+    </div>
+
+    <hr class="divider">
+
+    <h3 style="margin:0 0 10px;font-size:15px;">Finalize Invoice</h3>
     <div class="row">
       <div class="field">
-        <label>Invoice Month</label>
-        <input type="month" id="sv-month">
-      </div>
-      <div class="field">
-        <label>Additional Notes (optional, applies to whole export)</label>
-        <input type="text" id="sv-name" placeholder="e.g., Brand Ambassador Monthly Referral Commissions">
+        <label>Additional Notes (optional, appears on invoice)</label>
+        <input type="text" id="sv-name" placeholder="e.g., Monthly Referral Commissions & Expenses">
       </div>
     </div>
-    <button class="btn" onclick="exportPDF()">Export PDF</button>
-    <button class="btn secondary" onclick="clearCurrentEntries()">Clear Entries</button>
+    <button class="btn" onclick="exportPDF()">Generate Invoice PDF</button>
+    <button class="btn secondary" onclick="clearCurrentEntries()">Clear Everything</button>
     <div class="flag" id="sv-toast" style="display:none;"></div>
   </div>
 
@@ -242,7 +320,7 @@
 
   <footer>
     Figures reflect the referral bonus schedule as written in Section 4.2 of the Independent Contractor Agreement.
-    This calculator is a planning tool only — final payout is governed by the signed Agreement and Company's verification of each qualifying sale. Export a PDF of each month's projection for your own invoicing records.
+    This tool is a planning and invoicing aid only — final payout is governed by the signed Agreement and Company's verification of each qualifying sale.
   </footer>
 </div>
 
@@ -254,6 +332,13 @@ function switchTab(tabName){
   document.querySelectorAll(".panel").forEach(p=>p.classList.toggle("active", p.id===tabName));
 }
 document.querySelectorAll(".tab").forEach(t=>t.addEventListener("click", ()=>switchTab(t.dataset.tab)));
+
+// Default invoice date to today
+(function(){
+  const d = new Date();
+  const iso = d.toISOString().slice(0,10);
+  document.getElementById("inv-date").value = iso;
+})();
 
 function renderResult(elId, lines, total, flags){
   const el = document.getElementById(elId);
@@ -390,7 +475,7 @@ function calcRemodel(){
 // initial calc on load for single tabs
 calcRoofing(); calcInspection(); calcCustomHome(); calcRemodel();
 
-/* ---------- Monthly Projection tab (add / edit / remove / quantity / per-entry client note) ---------- */
+/* ---------- Commission entries (add / edit / remove / quantity / per-entry client note) ---------- */
 
 let mpEntries = []; // {id, type, quantity, inputs, clientNote, label, total, detail}
 let mpNextId = 1;
@@ -434,7 +519,10 @@ function escapeAttr(str){
   return String(str || "").replace(/"/g, "&quot;");
 }
 function escapeHtml(str){
-  return String(str || "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+  return String(str || "").replace(/[&<>"']/g, function(c){
+    const map = {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"};
+    return map[c];
+  });
 }
 
 function openEntryForm(existingEntry){
@@ -456,7 +544,7 @@ function openEntryForm(existingEntry){
     <div class="field">
       <label>Client / Reference (optional, can be added later)</label>
       <input type="text" id="f-client" value="${escapeAttr(clientNote)}" placeholder="e.g., Smith residence, 123 Main St">
-      <div class="hint">Used to match this line item back to the client when invoicing.</div>
+      <div class="hint">Used to match this line item back to the client on the invoice.</div>
     </div>`;
 
   let html = "";
@@ -471,7 +559,7 @@ function openEntryForm(existingEntry){
       </div>
       <div class="checkbox-row"><input type="checkbox" id="f-maintenance" ${inp && inp.maintenance ? "checked" : ""}><label for="f-maintenance">Maintenance contract signed</label></div>
       ${clientField}
-      <button class="btn" onclick="submitEntry('roofing')">${existingEntry ? "Save Changes" : "Add to Month"}</button>
+      <button class="btn" onclick="submitEntry('roofing')">${existingEntry ? "Save Changes" : "Add to Invoice"}</button>
       <button class="btn secondary" onclick="closeEntryForm()">Cancel</button>`;
   } else if (type === "inspection"){
     html = `
@@ -480,7 +568,7 @@ function openEntryForm(existingEntry){
         ${qtyField}
       </div>
       ${clientField}
-      <button class="btn" onclick="submitEntry('inspection')">${existingEntry ? "Save Changes" : "Add to Month"}</button>
+      <button class="btn" onclick="submitEntry('inspection')">${existingEntry ? "Save Changes" : "Add to Invoice"}</button>
       <button class="btn secondary" onclick="closeEntryForm()">Cancel</button>`;
   } else if (type === "customhome"){
     html = `
@@ -491,7 +579,7 @@ function openEntryForm(existingEntry){
         ${qtyField}
       </div>
       ${clientField}
-      <button class="btn" onclick="submitEntry('customhome')">${existingEntry ? "Save Changes" : "Add to Month"}</button>
+      <button class="btn" onclick="submitEntry('customhome')">${existingEntry ? "Save Changes" : "Add to Invoice"}</button>
       <button class="btn secondary" onclick="closeEntryForm()">Cancel</button>`;
   } else if (type === "remodel"){
     html = `
@@ -501,7 +589,7 @@ function openEntryForm(existingEntry){
         ${qtyField}
       </div>
       ${clientField}
-      <button class="btn" onclick="submitEntry('remodel')">${existingEntry ? "Save Changes" : "Add to Month"}</button>
+      <button class="btn" onclick="submitEntry('remodel')">${existingEntry ? "Save Changes" : "Add to Invoice"}</button>
       <button class="btn secondary" onclick="closeEntryForm()">Cancel</button>`;
   }
   formEl.innerHTML = html;
@@ -571,9 +659,11 @@ function removeEntry(id){
 }
 
 function clearCurrentEntries(){
-  if (mpEntries.length && !confirm("Clear all entries from the working table?")) return;
+  if ((mpEntries.length || exEntries.length) && !confirm("Clear all commission entries and expenses from this invoice?")) return;
   mpEntries = [];
+  exEntries = [];
   renderMonthly();
+  renderExpenses();
 }
 
 function renderMonthly(){
@@ -587,7 +677,7 @@ function renderMonthly(){
   } else {
     table.style.display = "table";
     emptyEl.style.display = "none";
-    tbody.innerHTML = mpEntries.map(e => `
+    tbody.innerHTML = mpEntries.map(function(e){ return `
       <tr>
         <td>${e.label}</td>
         <td>${e.detail}</td>
@@ -599,32 +689,183 @@ function renderMonthly(){
           <button class="remove-btn" onclick="removeEntry(${e.id})">Remove</button>
         </td>
       </tr>
-    `).join("");
+    `; }).join("");
   }
 
   // Subtotals by service line
   const subtotals = {};
-  mpEntries.forEach(e => { subtotals[e.label] = (subtotals[e.label] || 0) + e.total; });
+  mpEntries.forEach(function(e){ subtotals[e.label] = (subtotals[e.label] || 0) + e.total; });
   const subgrid = document.getElementById("mp-subgrid");
-  subgrid.innerHTML = Object.keys(subtotals).map(label => `
+  subgrid.innerHTML = Object.keys(subtotals).map(function(label){ return `
     <div class="subcard">
       <div class="lbl">${label}</div>
       <div class="val">${fmt(subtotals[label])}</div>
     </div>
-  `).join("");
+  `; }).join("");
 
-  const grand = mpEntries.reduce((sum, e) => sum + e.total, 0);
+  const grand = mpEntries.reduce(function(sum, e){ return sum + e.total; }, 0);
   document.getElementById("mp-grandtotal").textContent = fmt(grand);
+  updateGrandTotalAll();
 }
 
 renderMonthly();
 
-/* ---------- PDF Export ---------- */
+/* ---------- Expense reimbursements (with receipt photo attachment) ---------- */
+
+let exEntries = []; // {id, date, category, purpose, amount, receipt: {dataUrl, width, height, mime} | null}
+let exNextId = 1;
+let editingExpenseId = null;
+let pendingReceipt = null; // holds {dataUrl, width, height, mime} while form is open
+
+const expenseCategories = ["Client Dining", "Client / Referral Gift", "Mileage", "Other"];
+
+function openExpenseForm(existingExpense){
+  pendingReceipt = existingExpense ? existingExpense.receipt : null;
+  editingExpenseId = existingExpense ? existingExpense.id : null;
+  const formEl = document.getElementById("ex-form");
+  formEl.style.display = "block";
+
+  const dateVal = existingExpense ? existingExpense.date : new Date().toISOString().slice(0,10);
+  const purposeVal = existingExpense ? existingExpense.purpose : "";
+  const amountVal = existingExpense ? existingExpense.amount : "";
+  const catOptions = expenseCategories.map(function(cat){
+    const sel = existingExpense && existingExpense.category === cat ? "selected" : "";
+    return `<option value="${cat}" ${sel}>${cat}</option>`;
+  }).join("");
+
+  formEl.innerHTML = `
+    <div class="row">
+      <div class="field"><label>Date</label><input type="date" id="ex-date" value="${dateVal}"></div>
+      <div class="field"><label>Category</label><select id="ex-category">${catOptions}</select></div>
+      <div class="field"><label>Amount ($)</label><input type="number" id="ex-amount" value="${amountVal}" min="0" step="0.01"></div>
+    </div>
+    <div class="field">
+      <label>Business Purpose / Attendees</label>
+      <input type="text" id="ex-purpose" value="${escapeAttr(purposeVal)}" placeholder="e.g., Lunch with Smith referral — attendees: John Smith, self">
+      <div class="hint">Required detail per the Agreement for reimbursement — note the business purpose and, for meals, attendee names.</div>
+    </div>
+    <div class="field">
+      <label>Receipt Photo</label>
+      <input type="file" id="ex-receipt" accept="image/*">
+      <div class="hint" id="ex-receipt-status">${pendingReceipt ? "Current receipt attached. Choose a new file to replace it." : "Optional, but recommended for every expense."}</div>
+    </div>
+    <button class="btn" onclick="submitExpense()">${existingExpense ? "Save Changes" : "Add Expense"}</button>
+    <button class="btn secondary" onclick="closeExpenseForm()">Cancel</button>
+  `;
+
+  document.getElementById("ex-receipt").addEventListener("change", handleReceiptUpload);
+  formEl.scrollIntoView({ behavior: "smooth", block: "nearest" });
+}
+
+function handleReceiptUpload(evt){
+  const file = evt.target.files && evt.target.files[0];
+  if (!file) return;
+  const statusEl = document.getElementById("ex-receipt-status");
+  statusEl.textContent = "Loading receipt...";
+  const reader = new FileReader();
+  reader.onload = function(e){
+    const dataUrl = e.target.result;
+    const img = new Image();
+    img.onload = function(){
+      pendingReceipt = {
+        dataUrl: dataUrl,
+        width: img.naturalWidth,
+        height: img.naturalHeight,
+        mime: file.type || "image/jpeg",
+      };
+      statusEl.textContent = "Receipt attached: " + file.name;
+    };
+    img.onerror = function(){
+      statusEl.textContent = "Could not read that image — try a different file.";
+      pendingReceipt = null;
+    };
+    img.src = dataUrl;
+  };
+  reader.readAsDataURL(file);
+}
+
+function closeExpenseForm(){
+  document.getElementById("ex-form").style.display = "none";
+  document.getElementById("ex-form").innerHTML = "";
+  editingExpenseId = null;
+  pendingReceipt = null;
+}
+
+function submitExpense(){
+  const date = document.getElementById("ex-date").value;
+  const category = document.getElementById("ex-category").value;
+  const purpose = document.getElementById("ex-purpose").value.trim();
+  const amount = parseFloat(document.getElementById("ex-amount").value) || 0;
+
+  if (editingExpenseId){
+    const idx = exEntries.findIndex(function(x){ return x.id === editingExpenseId; });
+    if (idx > -1){
+      exEntries[idx] = { id: editingExpenseId, date, category, purpose, amount, receipt: pendingReceipt };
+    }
+  } else {
+    exEntries.push({ id: exNextId++, date, category, purpose, amount, receipt: pendingReceipt });
+  }
+
+  closeExpenseForm();
+  renderExpenses();
+}
+
+function editExpense(id){
+  const entry = exEntries.find(function(e){ return e.id === id; });
+  if (!entry) return;
+  openExpenseForm(entry);
+}
+
+function removeExpense(id){
+  exEntries = exEntries.filter(function(e){ return e.id !== id; });
+  renderExpenses();
+}
+
+function renderExpenses(){
+  const tbody = document.getElementById("ex-tbody");
+  const emptyEl = document.getElementById("ex-empty");
+  const table = document.getElementById("ex-table");
+
+  if (exEntries.length === 0){
+    table.style.display = "none";
+    emptyEl.style.display = "block";
+  } else {
+    table.style.display = "table";
+    emptyEl.style.display = "none";
+    tbody.innerHTML = exEntries.map(function(e){ return `
+      <tr>
+        <td>${escapeHtml(e.date)}</td>
+        <td>${escapeHtml(e.category)}</td>
+        <td>${escapeHtml(e.purpose) || '<span style="color:#bbb;">— none —</span>'}</td>
+        <td class="thumb">${e.receipt ? `<img src="${e.receipt.dataUrl}" alt="Receipt">` : '<span style="color:#bbb;">— no receipt —</span>'}</td>
+        <td class="amt">${fmt(e.amount)}</td>
+        <td class="act">
+          <button class="edit-btn" onclick="editExpense(${e.id})">Edit</button>
+          <button class="remove-btn" onclick="removeExpense(${e.id})">Remove</button>
+        </td>
+      </tr>
+    `; }).join("");
+  }
+
+  const grand = exEntries.reduce(function(sum, e){ return sum + e.amount; }, 0);
+  document.getElementById("ex-grandtotal").textContent = fmt(grand);
+  updateGrandTotalAll();
+}
+
+function updateGrandTotalAll(){
+  const commissionTotal = mpEntries.reduce(function(sum, e){ return sum + e.total; }, 0);
+  const expenseTotal = exEntries.reduce(function(sum, e){ return sum + e.amount; }, 0);
+  document.getElementById("grand-total-all").textContent = fmt(commissionTotal + expenseTotal);
+}
+
+renderExpenses();
+
+/* ---------- PDF Export (final invoice) ---------- */
 
 function monthLabel(monthValue){
   if (!monthValue) return "";
-  const [y, m] = monthValue.split("-");
-  const d = new Date(parseInt(y,10), parseInt(m,10)-1, 1);
+  const parts = monthValue.split("-");
+  const d = new Date(parseInt(parts[0],10), parseInt(parts[1],10)-1, 1);
   return d.toLocaleString("en-US", { month: "long", year: "numeric" });
 }
 
@@ -639,80 +880,220 @@ function showToast(msg, isError){
   toast.textContent = msg;
 }
 
+function formatDateDisplay(iso){
+  if (!iso) return "";
+  const parts = iso.split("-");
+  if (parts.length !== 3) return iso;
+  const d = new Date(parseInt(parts[0],10), parseInt(parts[1],10)-1, parseInt(parts[2],10));
+  return d.toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric" });
+}
+
 function exportPDF(){
-  if (mpEntries.length === 0){
-    showToast("Add at least one entry before exporting.", true);
+  if (mpEntries.length === 0 && exEntries.length === 0){
+    showToast("Add at least one commission entry or expense before generating the invoice.", true);
     return;
   }
-  const missingClient = mpEntries.some(e => !e.clientNote);
+  const missingClient = mpEntries.some(function(e){ return !e.clientNote; });
   const month = document.getElementById("sv-month").value;
   const name = document.getElementById("sv-name").value.trim();
   const mLabel = monthLabel(month);
+  const invDate = document.getElementById("inv-date").value;
+  const invNumber = document.getElementById("inv-number").value.trim() || ("INV-" + (month || "0000-00"));
+  const bizPhone = document.getElementById("biz-phone").value.trim() || "[Your Phone Number]";
+  const bizAddress = document.getElementById("biz-address").value.trim() || "[Your Street Address, City, State ZIP]";
+  const bizWebsite = document.getElementById("biz-website").value.trim() || "[Your Website Address]";
 
   const { jsPDF } = window.jspdf;
   const doc = new jsPDF({ unit: "pt", format: "letter" });
+  const pageWidth = doc.internal.pageSize.getWidth();
 
+  // ---- Header ----
   doc.setFont("helvetica", "bold");
-  doc.setFontSize(16);
-  doc.text("Referral Commission Projection", 40, 50);
+  doc.setFontSize(20);
+  doc.text("Revup Marketing", 40, 50);
 
   doc.setFont("helvetica", "normal");
-  doc.setFontSize(10);
-  doc.setTextColor(100);
-  doc.text("Independent Contractor Agreement — Section 4.2 Referral Structure", 40, 68);
+  doc.setFontSize(9.5);
+  doc.setTextColor(90);
+  doc.text(bizAddress, 40, 66);
+  doc.text(bizPhone + "  |  " + bizWebsite, 40, 78);
 
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(18);
   doc.setTextColor(30);
-  doc.setFontSize(11);
-  let y = 96;
-  if (mLabel){ doc.text(`Invoice Month: ${mLabel}`, 40, y); y += 16; }
-  if (name){ doc.text(`Notes: ${name}`, 40, y); y += 16; }
-  doc.text(`Exported: ${new Date().toLocaleDateString()}`, 40, y);
-  y += 20;
+  doc.text("INVOICE", pageWidth - 40, 50, { align: "right" });
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(9.5);
+  doc.setTextColor(90);
+  doc.text("Invoice #: " + invNumber, pageWidth - 40, 66, { align: "right" });
+  doc.text("Invoice Date: " + (invDate ? formatDateDisplay(invDate) : "—"), pageWidth - 40, 78, { align: "right" });
+  if (mLabel) doc.text("Period: " + mLabel, pageWidth - 40, 90, { align: "right" });
 
-  const rows = mpEntries.map(e => [e.label, e.detail, e.clientNote || "—", String(e.quantity), fmt(e.total)]);
-  const grand = mpEntries.reduce((sum, e) => sum + e.total, 0);
+  doc.setDrawColor(200);
+  doc.line(40, 100, pageWidth - 40, 100);
 
-  doc.autoTable({
-    startY: y,
-    head: [["Service Line", "Details", "Client / Reference", "Qty", "Payout"]],
-    body: rows,
-    styles: { font: "helvetica", fontSize: 9.5, cellPadding: 6 },
-    headStyles: { fillColor: [43,43,43], textColor: 255, fontStyle: "bold" },
-    columnStyles: {
-      0: { cellWidth: 80 },
-      1: { cellWidth: 145 },
-      2: { cellWidth: 145 },
-      3: { halign: "center", cellWidth: 35 },
-      4: { halign: "right", cellWidth: 80 },
-    },
-    margin: { left: 40, right: 40 },
-  });
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(10);
+  doc.setTextColor(30);
+  doc.text("Bill To:", 40, 118);
+  doc.setFont("helvetica", "normal");
+  doc.text("Murray Custom Homes, Roofing & Inspections", 40, 132);
 
-  const afterTableY = doc.lastAutoTable.finalY + 24;
+  if (name){
+    doc.setFont("helvetica", "italic");
+    doc.setFontSize(9.5);
+    doc.setTextColor(90);
+    doc.text(name, 40, 148);
+  }
+
+  let y = 168;
+
+  // ---- Commission section ----
+  if (mpEntries.length > 0){
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(12);
+    doc.setTextColor(30);
+    doc.text("Referral Commission", 40, y);
+    y += 10;
+
+    const commissionRows = mpEntries.map(function(e){
+      return [e.label, e.detail, e.clientNote || "—", String(e.quantity), fmt(e.total)];
+    });
+
+    doc.autoTable({
+      startY: y,
+      head: [["Service Line", "Details", "Client / Reference", "Qty", "Amount"]],
+      body: commissionRows,
+      styles: { font: "helvetica", fontSize: 9, cellPadding: 6 },
+      headStyles: { fillColor: [43,43,43], textColor: 255, fontStyle: "bold" },
+      columnStyles: {
+        0: { cellWidth: 75 },
+        1: { cellWidth: 140 },
+        2: { cellWidth: 140 },
+        3: { halign: "center", cellWidth: 30 },
+        4: { halign: "right", cellWidth: 75 },
+      },
+      margin: { left: 40, right: 40 },
+    });
+    y = doc.lastAutoTable.finalY + 10;
+
+    const commissionTotal = mpEntries.reduce(function(sum, e){ return sum + e.total; }, 0);
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(10.5);
+    doc.text("Commission Subtotal:", pageWidth - 200, y);
+    doc.text(fmt(commissionTotal), pageWidth - 40, y, { align: "right" });
+    y += 24;
+  }
+
+  // ---- Expense section ----
+  if (exEntries.length > 0){
+    if (y > 650){ doc.addPage(); y = 50; }
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(12);
+    doc.setTextColor(30);
+    doc.text("Expense Reimbursement", 40, y);
+    y += 10;
+
+    const expenseRows = exEntries.map(function(e){
+      return [formatDateDisplay(e.date), e.category, e.purpose || "—", e.receipt ? "Attached (see receipts below)" : "None", fmt(e.amount)];
+    });
+
+    doc.autoTable({
+      startY: y,
+      head: [["Date", "Category", "Business Purpose / Attendees", "Receipt", "Amount"]],
+      body: expenseRows,
+      styles: { font: "helvetica", fontSize: 9, cellPadding: 6 },
+      headStyles: { fillColor: [85,85,85], textColor: 255, fontStyle: "bold" },
+      columnStyles: {
+        0: { cellWidth: 60 },
+        1: { cellWidth: 90 },
+        2: { cellWidth: 170 },
+        3: { cellWidth: 90 },
+        4: { halign: "right", cellWidth: 50 },
+      },
+      margin: { left: 40, right: 40 },
+    });
+    y = doc.lastAutoTable.finalY + 10;
+
+    const expenseTotal = exEntries.reduce(function(sum, e){ return sum + e.amount; }, 0);
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(10.5);
+    doc.text("Expense Reimbursement Subtotal:", pageWidth - 250, y);
+    doc.text(fmt(expenseTotal), pageWidth - 40, y, { align: "right" });
+    y += 24;
+  }
+
+  // ---- Grand total ----
+  if (y > 700){ doc.addPage(); y = 50; }
+  const commissionTotalFinal = mpEntries.reduce(function(sum, e){ return sum + e.total; }, 0);
+  const expenseTotalFinal = exEntries.reduce(function(sum, e){ return sum + e.amount; }, 0);
+  const grandTotal = commissionTotalFinal + expenseTotalFinal;
+
+  doc.setDrawColor(30);
+  doc.setLineWidth(1);
+  doc.line(pageWidth - 260, y, pageWidth - 40, y);
+  y += 16;
   doc.setFont("helvetica", "bold");
   doc.setFontSize(13);
-  doc.text("Total Projected Commission Income:", 40, afterTableY);
-  doc.text(fmt(grand), 555, afterTableY, { align: "right" });
+  doc.text("TOTAL AMOUNT DUE:", pageWidth - 260, y);
+  doc.text(fmt(grandTotal), pageWidth - 40, y, { align: "right" });
+  y += 30;
 
+  // ---- Notices ----
   doc.setFont("helvetica", "normal");
-  doc.setFontSize(8);
+  doc.setFontSize(8.5);
   doc.setTextColor(120);
-  let noteY = afterTableY + 26;
   if (missingClient){
     doc.setTextColor(150, 60, 60);
-    doc.text("Note: one or more entries are missing a Client / Reference — edit those entries before finalizing invoices.", 40, noteY, { maxWidth: 515 });
-    noteY += 14;
+    doc.text("Note: one or more commission entries are missing a Client / Reference — consider updating before submitting.", 40, y, { maxWidth: 515 });
+    y += 14;
+    doc.setTextColor(120);
   }
-  doc.setTextColor(120);
   doc.text(
-    "Planning estimate only. Final payout is governed by the signed Independent Contractor Agreement and Company verification of each qualifying sale.",
-    40, noteY, { maxWidth: 515 }
+    "This invoice is submitted pursuant to, and payment is requested in accordance with, the terms of the signed Independent Contractor Agreement between Revup Marketing and Murray Custom Homes, Roofing & Inspections. Please remit payment as per that Agreement.",
+    40, y, { maxWidth: 515 }
   );
+  y += 28;
 
-  const filenameBase = (mLabel ? sanitizeFilename(mLabel) : "Commission-Projection") + (name ? "-" + sanitizeFilename(name) : "");
+  doc.setFont("helvetica", "italic");
+  doc.setFontSize(10);
+  doc.setTextColor(60);
+  doc.text("Thank you for your business!", 40, y);
+
+  // ---- Receipts appendix ----
+  const withReceipts = exEntries.filter(function(e){ return e.receipt; });
+  if (withReceipts.length > 0){
+    withReceipts.forEach(function(e){
+      doc.addPage();
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(12);
+      doc.setTextColor(30);
+      doc.text("Receipt — " + formatDateDisplay(e.date) + " — " + e.category, 40, 50);
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(10);
+      doc.setTextColor(90);
+      doc.text((e.purpose || "") + "   Amount: " + fmt(e.amount), 40, 66);
+
+      const maxW = pageWidth - 80;
+      const maxH = doc.internal.pageSize.getHeight() - 120;
+      let w = e.receipt.width;
+      let h = e.receipt.height;
+      const scale = Math.min(maxW / w, maxH / h, 1);
+      w = w * scale;
+      h = h * scale;
+      const format = e.receipt.mime && e.receipt.mime.indexOf("png") > -1 ? "PNG" : "JPEG";
+      try {
+        doc.addImage(e.receipt.dataUrl, format, 40, 90, w, h);
+      } catch (err){
+        doc.text("(Could not embed this receipt image — attach separately if needed.)", 40, 100);
+      }
+    });
+  }
+
+  const filenameBase = (mLabel ? sanitizeFilename(mLabel) : "Invoice") + "-Revup-Marketing-Invoice";
   doc.save(filenameBase + ".pdf");
 
-  showToast(`Exported "${filenameBase}.pdf".`, false);
+  showToast(`Generated "${filenameBase}.pdf".`, false);
 }
 </script>
 </body>
