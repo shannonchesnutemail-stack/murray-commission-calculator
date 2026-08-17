@@ -14,7 +14,7 @@
     font-family:"Calibri","Segoe UI",Arial,sans-serif;
     background:#eeeeee; color:var(--ink); margin:0; padding:0;
   }
-  .wrap{max-width:900px;margin:0 auto;padding:32px 20px 60px;}
+  .wrap{max-width:1000px;margin:0 auto;padding:32px 20px 60px;}
   header{text-align:center;margin-bottom:28px;}
   header .kicker{color:var(--muted);font-size:13px;letter-spacing:.08em;text-transform:uppercase;margin-bottom:6px;}
   header h1{font-size:26px;margin:0 0 6px;}
@@ -54,6 +54,25 @@
   .flag.no{background:#f7eaea;color:var(--bad);border:1px solid #e6c6c6;}
   footer{margin-top:30px;font-size:12px;color:var(--muted);text-align:center;line-height:1.6;}
   .clause{font-size:12px;color:var(--muted);background:var(--panel);border-left:3px solid var(--line);padding:10px 12px;margin-bottom:18px;border-radius:0 5px 5px 0;}
+  .btn{padding:10px 18px;border:1px solid var(--ink);background:var(--ink);color:#fff;border-radius:5px;cursor:pointer;font-weight:600;font-size:14px;}
+  .btn.secondary{background:#fff;color:var(--ink);}
+  .btn.small{padding:6px 12px;font-size:12px;}
+  table.entries{width:100%;border-collapse:collapse;margin-top:18px;font-size:13px;}
+  table.entries th, table.entries td{padding:8px 10px;border-bottom:1px solid var(--line);text-align:left;}
+  table.entries th{color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.04em;}
+  table.entries td.amt{font-weight:600;text-align:right;}
+  table.entries td.act{text-align:right;}
+  .remove-btn{background:none;border:none;color:var(--bad);cursor:pointer;font-size:12px;font-weight:600;}
+  .grand-total{
+    margin-top:16px;padding:18px;background:var(--ink);color:#fff;border-radius:6px;
+    display:flex;justify-content:space-between;align-items:center;font-size:20px;font-weight:700;
+  }
+  .grand-total .sub{font-size:12px;font-weight:400;color:#cccccc;display:block;margin-top:4px;}
+  .subgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;margin-top:14px;}
+  .subcard{background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:12px 14px;}
+  .subcard .lbl{font-size:11px;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);}
+  .subcard .val{font-size:18px;font-weight:700;margin-top:4px;}
+  .empty-state{color:var(--muted);font-size:13px;padding:16px 0;text-align:center;}
 </style>
 </head>
 <body>
@@ -61,18 +80,59 @@
   <header>
     <div class="kicker">Independent Contractor Agreement — Section 4.2</div>
     <h1>Referral Commission Calculator</h1>
-    <p>Model referral bonus scenarios for each service line under the current referral structure.</p>
+    <p>Model referral bonus scenarios and projected monthly income for each service line under the current referral structure.</p>
   </header>
 
   <div class="tabs">
-    <div class="tab active" data-tab="roofing">Roofing Services</div>
+    <div class="tab active" data-tab="monthly">Monthly Projection</div>
+    <div class="tab" data-tab="roofing">Roofing Services</div>
     <div class="tab" data-tab="inspection">Inspection Services</div>
     <div class="tab" data-tab="customhome">Custom Home</div>
     <div class="tab" data-tab="remodel">Remodel</div>
   </div>
 
+  <!-- MONTHLY PROJECTION -->
+  <div class="panel active" id="monthly">
+    <div class="clause">Add every commission event that applies for the month (e.g., 2 inspections scheduled, 1 signed roofing contract, 1 custom home first draw). Each entry is calculated using the same Section 4.2 rules as the individual tabs, then totaled below for a projected monthly payout.</div>
+
+    <div class="row">
+      <div class="field" style="flex:0 0 200px;">
+        <label>Add entry for service line</label>
+        <select id="mp-type">
+          <option value="roofing">Roofing Services</option>
+          <option value="inspection">Inspection Services</option>
+          <option value="customhome">Custom Home</option>
+          <option value="remodel">Remodel</option>
+        </select>
+      </div>
+      <div class="field" style="flex:0 0 auto;align-self:flex-end;">
+        <button class="btn" onclick="openEntryForm()">+ Add Entry</button>
+      </div>
+    </div>
+
+    <div id="mp-form" style="display:none;background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:16px;margin-bottom:8px;"></div>
+
+    <table class="entries" id="mp-table">
+      <thead>
+        <tr><th>Service Line</th><th>Details</th><th style="text-align:right;">Payout</th><th></th></tr>
+      </thead>
+      <tbody id="mp-tbody"></tbody>
+    </table>
+    <div id="mp-empty" class="empty-state">No entries yet — add a commission event above to start projecting this month's income.</div>
+
+    <div class="subgrid" id="mp-subgrid"></div>
+
+    <div class="grand-total">
+      <div>
+        Projected Monthly Commission Income
+        <span class="sub">Sum of all entries added above</span>
+      </div>
+      <div id="mp-grandtotal">$0.00</div>
+    </div>
+  </div>
+
   <!-- ROOFING -->
-  <div class="panel active" id="roofing">
+  <div class="panel" id="roofing">
     <div class="clause">Flat $50 per inspection scheduled · Flat $100 per approved signed contract + 3% of contract price upon completion (only if contract ≥ $10,000) · Flat $200 per signed maintenance contract.</div>
 
     <div class="checkbox-row"><input type="checkbox" id="r-inspScheduled" checked><label for="r-inspScheduled">Inspection scheduled</label></div>
@@ -92,7 +152,7 @@
       </div>
     </div>
     <div class="checkbox-row"><input type="checkbox" id="r-maintenance"><label for="r-maintenance">Maintenance contract signed (from this lead)</label></div>
-    <button onclick="calcRoofing()" style="margin-top:6px;padding:10px 18px;border:1px solid var(--ink);background:var(--ink);color:#fff;border-radius:5px;cursor:pointer;font-weight:600;">Calculate</button>
+    <button class="btn" onclick="calcRoofing()">Calculate</button>
     <div class="result" id="r-result" style="display:none;"></div>
   </div>
 
@@ -105,20 +165,27 @@
         <input type="number" id="i-revenue" value="1500" min="0" step="50">
       </div>
     </div>
-    <button onclick="calcInspection()" style="padding:10px 18px;border:1px solid var(--ink);background:var(--ink);color:#fff;border-radius:5px;cursor:pointer;font-weight:600;">Calculate</button>
+    <button class="btn" onclick="calcInspection()">Calculate</button>
     <div class="result" id="i-result" style="display:none;"></div>
   </div>
 
   <!-- CUSTOM HOME -->
   <div class="panel" id="customhome">
-    <div class="clause">Flat $200 upon verified signed custom home contract, payable at first draw · If contract price exceeds $500,000 (excluding land and change orders), add 10 basis points (0.10%) of the initial contract price.</div>
+    <div class="clause">Flat $200 upon verified signed custom home contract, plus 10 basis points (0.10%) of the initial contract price if it exceeds $500,000 (excluding land and change orders). <strong>The entire bonus is payable at first draw</strong> — it is not earned in the month the contract is signed unless first draw also occurs that month.</div>
     <div class="row">
       <div class="field">
         <label>Signed custom home contract price ($, excl. land/change orders)</label>
         <input type="number" id="c-price" value="650000" min="0" step="1000">
       </div>
+      <div class="field">
+        <label>First draw completed this period?</label>
+        <select id="c-firstdraw">
+          <option value="yes" selected>Yes — first draw completed</option>
+          <option value="no">No — first draw not yet reached</option>
+        </select>
+      </div>
     </div>
-    <button onclick="calcCustomHome()" style="padding:10px 18px;border:1px solid var(--ink);background:var(--ink);color:#fff;border-radius:5px;cursor:pointer;font-weight:600;">Calculate</button>
+    <button class="btn" onclick="calcCustomHome()">Calculate</button>
     <div class="result" id="c-result" style="display:none;"></div>
   </div>
 
@@ -138,7 +205,7 @@
         </select>
       </div>
     </div>
-    <button onclick="calcRemodel()" style="padding:10px 18px;border:1px solid var(--ink);background:var(--ink);color:#fff;border-radius:5px;cursor:pointer;font-weight:600;">Calculate</button>
+    <button class="btn" onclick="calcRemodel()">Calculate</button>
     <div class="result" id="m-result" style="display:none;"></div>
   </div>
 
@@ -171,51 +238,34 @@ function renderResult(elId, lines, total, flags){
   el.innerHTML = html;
 }
 
-function calcRoofing(){
-  const inspScheduled = document.getElementById("r-inspScheduled").checked;
-  const contractApproved = document.getElementById("r-contractApproved").checked;
-  const price = parseFloat(document.getElementById("r-price").value) || 0;
-  const completed = document.getElementById("r-completed").value === "yes";
-  const maintenance = document.getElementById("r-maintenance").checked;
+/* ---------- Pure calculation functions (shared by single tabs + monthly projection) ---------- */
 
+function computeRoofing({inspScheduled, contractApproved, price, completed, maintenance}){
   let total = 0, lines = [], flags = [];
-
-  if (inspScheduled){
-    total += 50;
-    lines.push({label:"Inspection scheduled (flat)", amount: fmt(50)});
-  }
-  if (contractApproved){
-    total += 100;
-    lines.push({label:"Contract approved/signed (flat)", amount: fmt(100)});
-  }
+  if (inspScheduled){ total += 50; lines.push({label:"Inspection scheduled (flat)", amount: fmt(50)}); }
+  if (contractApproved){ total += 100; lines.push({label:"Contract approved/signed (flat)", amount: fmt(100)}); }
   if (contractApproved && completed){
     if (price >= 10000){
       const pct = price * 0.03;
       total += pct;
       lines.push({label:`Completion bonus — 3% of ${fmt(price)}`, amount: fmt(pct)});
-      flags.push({ok:true, text:`Contract price meets the $10,000 minimum — 3% completion bonus applies.`});
+      flags.push({ok:true, text:"Contract price meets the $10,000 minimum — 3% completion bonus applies."});
     } else {
-      flags.push({ok:false, text:`Contract price is below the $10,000 minimum — 3% completion bonus does NOT apply.`});
+      flags.push({ok:false, text:"Contract price is below the $10,000 minimum — 3% completion bonus does NOT apply."});
     }
   } else if (contractApproved && !completed){
-    flags.push({ok:false, text:`Job not yet completed — 3% completion bonus not yet earned.`});
+    flags.push({ok:false, text:"Job not yet completed — 3% completion bonus not yet earned."});
   }
-  if (maintenance){
-    total += 200;
-    lines.push({label:"Maintenance contract signed (flat)", amount: fmt(200)});
-  }
+  if (maintenance){ total += 200; lines.push({label:"Maintenance contract signed (flat)", amount: fmt(200)}); }
   if (!inspScheduled && !contractApproved && !maintenance){
     flags.push({ok:false, text:"No qualifying milestones selected."});
   }
   flags.push({ok:true, text:"Any additional services generated by this lead are paid at the current agreed rate for that service line (not calculated here)."});
-
-  renderResult("r-result", lines, total, flags);
+  return {total, lines, flags};
 }
 
-function calcInspection(){
-  const revenue = parseFloat(document.getElementById("i-revenue").value) || 0;
+function computeInspection({revenue}){
   let total = 0, lines = [], flags = [];
-
   if (revenue > 2000){
     total = revenue * 0.10;
     lines.push({label:`Revenue tier — 10% of ${fmt(revenue)} (replaces flat fee)`, amount: fmt(total)});
@@ -226,33 +276,30 @@ function calcInspection(){
     flags.push({ok:true, text:"Revenue is $2,000 or less — the $100 flat fee applies."});
   }
   flags.push({ok:true, text:"Any additional services generated by this lead are paid at the current agreed rate for that service line (not calculated here)."});
-
-  renderResult("i-result", lines, total, flags);
+  return {total, lines, flags};
 }
 
-function calcCustomHome(){
-  const price = parseFloat(document.getElementById("c-price").value) || 0;
-  let total = 200;
-  let lines = [{label:"Signed custom home contract (flat, at first draw)", amount: fmt(200)}];
-  let flags = [];
-
+function computeCustomHome({price, firstDrawCompleted}){
+  let total = 0, lines = [], flags = [];
+  if (!firstDrawCompleted){
+    flags.push({ok:false, text:"First draw has not occurred this period — the entire custom home bonus (flat + basis points) is not yet payable."});
+    return {total, lines, flags};
+  }
+  total += 200;
+  lines.push({label:"Signed custom home contract (flat, payable at first draw)", amount: fmt(200)});
   if (price > 500000){
     const bps = price * 0.0010; // 10 basis points = 0.10%
     total += bps;
     lines.push({label:`Basis-point bonus — 10 bp of ${fmt(price)}`, amount: fmt(bps)});
-    flags.push({ok:true, text:"Contract price exceeds $500,000 — 10 basis point bonus applies."});
+    flags.push({ok:true, text:"Contract price exceeds $500,000 and first draw is complete — 10 basis point bonus applies this period."});
   } else {
-    flags.push({ok:false, text:"Contract price is $500,000 or less — basis-point bonus does not apply."});
+    flags.push({ok:false, text:"Contract price is $500,000 or less — basis-point bonus does not apply (flat $200 still applies since first draw is complete)."});
   }
-
-  renderResult("c-result", lines, total, flags);
+  return {total, lines, flags};
 }
 
-function calcRemodel(){
-  const price = parseFloat(document.getElementById("m-price").value) || 0;
-  const completed = document.getElementById("m-completed").value === "yes";
+function computeRemodel({price, completed}){
   let total = 0, lines = [], flags = [];
-
   if (price < 100000){
     flags.push({ok:false, text:"Project price is below the $100,000 minimum — remodel bonus does not qualify."});
   } else if (!completed){
@@ -263,12 +310,175 @@ function calcRemodel(){
     lines.push({label:`Remodel bonus — 2% of ${fmt(price)}`, amount: fmt(pct)});
     flags.push({ok:true, text:"Project meets the $100,000 minimum and is completed — 2% bonus applies."});
   }
-
-  renderResult("m-result", lines, total, flags);
+  return {total, lines, flags};
 }
 
-// initial calc on load
-calcRoofing();
+/* ---------- Single-scenario tab handlers ---------- */
+
+function calcRoofing(){
+  const r = computeRoofing({
+    inspScheduled: document.getElementById("r-inspScheduled").checked,
+    contractApproved: document.getElementById("r-contractApproved").checked,
+    price: parseFloat(document.getElementById("r-price").value) || 0,
+    completed: document.getElementById("r-completed").value === "yes",
+    maintenance: document.getElementById("r-maintenance").checked,
+  });
+  renderResult("r-result", r.lines, r.total, r.flags);
+}
+
+function calcInspection(){
+  const r = computeInspection({ revenue: parseFloat(document.getElementById("i-revenue").value) || 0 });
+  renderResult("i-result", r.lines, r.total, r.flags);
+}
+
+function calcCustomHome(){
+  const r = computeCustomHome({
+    price: parseFloat(document.getElementById("c-price").value) || 0,
+    firstDrawCompleted: document.getElementById("c-firstdraw").value === "yes",
+  });
+  renderResult("c-result", r.lines, r.total, r.flags);
+}
+
+function calcRemodel(){
+  const r = computeRemodel({
+    price: parseFloat(document.getElementById("m-price").value) || 0,
+    completed: document.getElementById("m-completed").value === "yes",
+  });
+  renderResult("m-result", r.lines, r.total, r.flags);
+}
+
+// initial calc on load for single tabs
+calcRoofing(); calcInspection(); calcCustomHome(); calcRemodel();
+
+/* ---------- Monthly Projection tab ---------- */
+
+let mpEntries = []; // {id, type, label, total, detail}
+let mpNextId = 1;
+
+const typeLabels = { roofing:"Roofing", inspection:"Inspection", customhome:"Custom Home", remodel:"Remodel" };
+
+function openEntryForm(){
+  const type = document.getElementById("mp-type").value;
+  const formEl = document.getElementById("mp-form");
+  formEl.style.display = "block";
+
+  let html = "";
+  if (type === "roofing"){
+    html = `
+      <div class="checkbox-row"><input type="checkbox" id="f-inspScheduled" checked><label for="f-inspScheduled">Inspection scheduled</label></div>
+      <div class="checkbox-row"><input type="checkbox" id="f-contractApproved" checked><label for="f-contractApproved">Contract approved / signed</label></div>
+      <div class="row">
+        <div class="field"><label>Contracted job price ($)</label><input type="number" id="f-price" value="15000" min="0" step="100"></div>
+        <div class="field"><label>Job completed?</label><select id="f-completed"><option value="yes">Yes</option><option value="no">No</option></select></div>
+      </div>
+      <div class="checkbox-row"><input type="checkbox" id="f-maintenance"><label for="f-maintenance">Maintenance contract signed</label></div>
+      <button class="btn" onclick="addEntry('roofing')">Add to Month</button>
+      <button class="btn secondary" onclick="closeEntryForm()">Cancel</button>`;
+  } else if (type === "inspection"){
+    html = `
+      <div class="field"><label>Inspection revenue ($)</label><input type="number" id="f-revenue" value="1500" min="0" step="50"></div>
+      <button class="btn" onclick="addEntry('inspection')">Add to Month</button>
+      <button class="btn secondary" onclick="closeEntryForm()">Cancel</button>`;
+  } else if (type === "customhome"){
+    html = `
+      <div class="row">
+        <div class="field"><label>Signed contract price ($, excl. land/change orders)</label><input type="number" id="f-chprice" value="650000" min="0" step="1000"></div>
+        <div class="field"><label>First draw completed this period?</label><select id="f-firstdraw"><option value="yes">Yes</option><option value="no">No</option></select></div>
+      </div>
+      <button class="btn" onclick="addEntry('customhome')">Add to Month</button>
+      <button class="btn secondary" onclick="closeEntryForm()">Cancel</button>`;
+  } else if (type === "remodel"){
+    html = `
+      <div class="row">
+        <div class="field"><label>Remodel project price ($)</label><input type="number" id="f-rmprice" value="150000" min="0" step="1000"></div>
+        <div class="field"><label>Project completed?</label><select id="f-rmcompleted"><option value="yes">Yes</option><option value="no">No</option></select></div>
+      </div>
+      <button class="btn" onclick="addEntry('remodel')">Add to Month</button>
+      <button class="btn secondary" onclick="closeEntryForm()">Cancel</button>`;
+  }
+  formEl.innerHTML = html;
+}
+
+function closeEntryForm(){
+  document.getElementById("mp-form").style.display = "none";
+  document.getElementById("mp-form").innerHTML = "";
+}
+
+function addEntry(type){
+  let result, detail;
+  if (type === "roofing"){
+    const inputs = {
+      inspScheduled: document.getElementById("f-inspScheduled").checked,
+      contractApproved: document.getElementById("f-contractApproved").checked,
+      price: parseFloat(document.getElementById("f-price").value) || 0,
+      completed: document.getElementById("f-completed").value === "yes",
+      maintenance: document.getElementById("f-maintenance").checked,
+    };
+    result = computeRoofing(inputs);
+    detail = `Contract ${fmt(inputs.price)}${inputs.completed ? " (completed)" : " (not completed)"}`;
+  } else if (type === "inspection"){
+    const revenue = parseFloat(document.getElementById("f-revenue").value) || 0;
+    result = computeInspection({revenue});
+    detail = `Revenue ${fmt(revenue)}`;
+  } else if (type === "customhome"){
+    const price = parseFloat(document.getElementById("f-chprice").value) || 0;
+    const firstDrawCompleted = document.getElementById("f-firstdraw").value === "yes";
+    result = computeCustomHome({price, firstDrawCompleted});
+    detail = `Contract ${fmt(price)} — first draw ${firstDrawCompleted ? "completed" : "not yet reached"}`;
+  } else if (type === "remodel"){
+    const price = parseFloat(document.getElementById("f-rmprice").value) || 0;
+    const completed = document.getElementById("f-rmcompleted").value === "yes";
+    result = computeRemodel({price, completed});
+    detail = `Project ${fmt(price)}${completed ? " (completed)" : " (not completed)"}`;
+  }
+
+  mpEntries.push({ id: mpNextId++, type, label: typeLabels[type], total: result.total, detail });
+  closeEntryForm();
+  renderMonthly();
+}
+
+function removeEntry(id){
+  mpEntries = mpEntries.filter(e => e.id !== id);
+  renderMonthly();
+}
+
+function renderMonthly(){
+  const tbody = document.getElementById("mp-tbody");
+  const emptyEl = document.getElementById("mp-empty");
+  const table = document.getElementById("mp-table");
+
+  if (mpEntries.length === 0){
+    table.style.display = "none";
+    emptyEl.style.display = "block";
+  } else {
+    table.style.display = "table";
+    emptyEl.style.display = "none";
+    tbody.innerHTML = mpEntries.map(e => `
+      <tr>
+        <td>${e.label}</td>
+        <td>${e.detail}</td>
+        <td class="amt">${fmt(e.total)}</td>
+        <td class="act"><button class="remove-btn" onclick="removeEntry(${e.id})">Remove</button></td>
+      </tr>
+    `).join("");
+  }
+
+  // Subtotals by service line
+  const subtotals = {};
+  mpEntries.forEach(e => { subtotals[e.label] = (subtotals[e.label] || 0) + e.total; });
+  const subgrid = document.getElementById("mp-subgrid");
+  subgrid.innerHTML = Object.keys(subtotals).map(label => `
+    <div class="subcard">
+      <div class="lbl">${label}</div>
+      <div class="val">${fmt(subtotals[label])}</div>
+    </div>
+  `).join("");
+
+  const grand = mpEntries.reduce((sum, e) => sum + e.total, 0);
+  document.getElementById("mp-grandtotal").textContent = fmt(grand);
+}
+
+renderMonthly();
 </script>
 </body>
 </html>
