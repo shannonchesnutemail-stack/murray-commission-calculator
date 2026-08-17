@@ -4,6 +4,8 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Referral Commission Calculator — Section 4.2</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
 <style>
   :root{
     --ink:#222; --muted:#6b6b6b; --line:#d9d9d9; --panel:#f7f7f7;
@@ -61,7 +63,9 @@
   table.entries th, table.entries td{padding:8px 10px;border-bottom:1px solid var(--line);text-align:left;}
   table.entries th{color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.04em;}
   table.entries td.amt{font-weight:600;text-align:right;}
-  table.entries td.act{text-align:right;}
+  table.entries td.qty{text-align:center;}
+  table.entries td.act{text-align:right;white-space:nowrap;}
+  .edit-btn{background:none;border:none;color:var(--ink);cursor:pointer;font-size:12px;font-weight:600;margin-right:10px;text-decoration:underline;}
   .remove-btn{background:none;border:none;color:var(--bad);cursor:pointer;font-size:12px;font-weight:600;}
   .grand-total{
     margin-top:16px;padding:18px;background:var(--ink);color:#fff;border-radius:6px;
@@ -74,12 +78,6 @@
   .subcard .val{font-size:18px;font-weight:700;margin-top:4px;}
   .empty-state{color:var(--muted);font-size:13px;padding:16px 0;text-align:center;}
   .divider{border:0;border-top:1px solid var(--line);margin:28px 0 20px;}
-  .saved-row{display:flex;justify-content:space-between;align-items:center;padding:10px 12px;border:1px solid var(--line);border-radius:6px;margin-bottom:8px;background:#fafafa;flex-wrap:wrap;gap:8px;}
-  .saved-row .meta{font-size:13px;}
-  .saved-row .meta b{display:block;font-size:14px;}
-  .saved-row .meta span{color:var(--muted);font-size:12px;}
-  .saved-row .actions{display:flex;gap:6px;flex-wrap:wrap;}
-  .save-toast{margin-top:10px;padding:10px 12px;border-radius:5px;font-size:13px;background:#eaf4ee;color:var(--good);border:1px solid #c7e3d2;display:none;}
 </style>
 </head>
 <body>
@@ -92,7 +90,6 @@
 
   <div class="tabs">
     <div class="tab active" data-tab="monthly">Monthly Projection</div>
-    <div class="tab" data-tab="saved">Saved Projections</div>
     <div class="tab" data-tab="roofing">Roofing Services</div>
     <div class="tab" data-tab="inspection">Inspection Services</div>
     <div class="tab" data-tab="customhome">Custom Home</div>
@@ -101,7 +98,7 @@
 
   <!-- MONTHLY PROJECTION -->
   <div class="panel active" id="monthly">
-    <div class="clause">Add every commission event that applies for the month (e.g., 2 inspections scheduled, 1 signed roofing contract, 1 custom home first draw). Each entry is calculated using the same Section 4.2 rules as the individual tabs, then totaled below for a projected monthly payout.</div>
+    <div class="clause">Add every commission event that applies for the month. Use the Quantity field for repeated identical events (e.g., 10 inspections scheduled at once) instead of adding one at a time. Each entry can be edited or removed afterward, and the identifying info below can be filled in any time before exporting.</div>
 
     <div class="row">
       <div class="field" style="flex:0 0 200px;">
@@ -122,7 +119,7 @@
 
     <table class="entries" id="mp-table">
       <thead>
-        <tr><th>Service Line</th><th>Details</th><th style="text-align:right;">Payout</th><th></th></tr>
+        <tr><th>Service Line</th><th>Details</th><th style="text-align:center;">Qty</th><th style="text-align:right;">Payout</th><th></th></tr>
       </thead>
       <tbody id="mp-tbody"></tbody>
     </table>
@@ -140,8 +137,8 @@
 
     <hr class="divider">
 
-    <h3 style="margin:0 0 10px;font-size:15px;">Save This Projection for Invoicing</h3>
-    <div class="clause">Give this projection a name and select the month the invoice will be issued for. Saving stores it in this browser under "Saved Projections," where you can reopen, re-load, export as a CSV file (named after the invoice month), or delete it later.</div>
+    <h3 style="margin:0 0 10px;font-size:15px;">Export for Invoicing</h3>
+    <div class="clause">Optionally add an invoice month and identifying notes (name, contractor, etc.) — these appear on the exported PDF and are used to name the file. You can fill these in now or right before exporting.</div>
     <div class="row">
       <div class="field">
         <label>Invoice Month</label>
@@ -152,16 +149,9 @@
         <input type="text" id="sv-name" placeholder="e.g., Brand Ambassador — August Referral Commissions">
       </div>
     </div>
-    <button class="btn" onclick="saveProjection()">Save Projection</button>
+    <button class="btn" onclick="exportPDF()">Export PDF</button>
     <button class="btn secondary" onclick="clearCurrentEntries()">Clear Entries</button>
-    <div class="save-toast" id="sv-toast"></div>
-  </div>
-
-  <!-- SAVED PROJECTIONS -->
-  <div class="panel" id="saved">
-    <div class="clause">Projections you've saved from the Monthly Projection tab. Load one back into the working table, export it as a CSV file for invoicing, or delete it. Saved projections persist in this browser only.</div>
-    <div id="saved-list"></div>
-    <div id="saved-empty" class="empty-state">No saved projections yet. Build a monthly projection, then use "Save Projection" to store it here.</div>
+    <div class="flag" id="sv-toast" style="display:none;"></div>
   </div>
 
   <!-- ROOFING -->
@@ -244,7 +234,7 @@
 
   <footer>
     Figures reflect the referral bonus schedule as written in Section 4.2 of the Independent Contractor Agreement.
-    This calculator is a planning tool only — final payout is governed by the signed Agreement and Company's verification of each qualifying sale. Saved projections are stored locally in this browser (not on a server) — export a CSV copy for any record you need to keep long-term.
+    This calculator is a planning tool only — final payout is governed by the signed Agreement and Company's verification of each qualifying sale. Export a PDF of each month's projection for your own invoicing records.
   </footer>
 </div>
 
@@ -254,7 +244,6 @@ const fmt = (n) => "$" + n.toLocaleString("en-US", {minimumFractionDigits:2, max
 function switchTab(tabName){
   document.querySelectorAll(".tab").forEach(t=>t.classList.toggle("active", t.dataset.tab===tabName));
   document.querySelectorAll(".panel").forEach(p=>p.classList.toggle("active", p.id===tabName));
-  if (tabName === "saved") renderSavedList();
 }
 document.querySelectorAll(".tab").forEach(t=>t.addEventListener("click", ()=>switchTab(t.dataset.tab)));
 
@@ -272,7 +261,7 @@ function renderResult(elId, lines, total, flags){
   el.innerHTML = html;
 }
 
-/* ---------- Pure calculation functions (shared by single tabs + monthly projection) ---------- */
+/* ---------- Pure calculation functions (per-unit; multiplied by quantity by caller) ---------- */
 
 function computeRoofing({inspScheduled, contractApproved, price, completed, maintenance}){
   let total = 0, lines = [], flags = [];
@@ -384,91 +373,158 @@ function calcRemodel(){
 // initial calc on load for single tabs
 calcRoofing(); calcInspection(); calcCustomHome(); calcRemodel();
 
-/* ---------- Monthly Projection tab ---------- */
+/* ---------- Monthly Projection tab (add / edit / remove / quantity) ---------- */
 
-let mpEntries = []; // {id, type, label, total, detail}
+let mpEntries = []; // {id, type, quantity, inputs, label, total, detail}
 let mpNextId = 1;
+let editingEntryId = null; // set when editing an existing entry
 
 const typeLabels = { roofing:"Roofing", inspection:"Inspection", customhome:"Custom Home", remodel:"Remodel" };
 
-function openEntryForm(){
-  const type = document.getElementById("mp-type").value;
+function computeForType(type, inputs, quantity){
+  let result;
+  if (type === "roofing") result = computeRoofing(inputs);
+  else if (type === "inspection") result = computeInspection(inputs);
+  else if (type === "customhome") result = computeCustomHome(inputs);
+  else if (type === "remodel") result = computeRemodel(inputs);
+
+  const q = Math.max(1, parseInt(quantity, 10) || 1);
+  const scaledLines = result.lines.map(l => ({
+    label: q > 1 ? `${l.label} ×${q}` : l.label,
+    amount: fmt(parseCurrency(l.amount) * q),
+  }));
+  return { total: result.total * q, lines: scaledLines, flags: result.flags, quantity: q };
+}
+
+function parseCurrency(str){
+  return parseFloat(String(str).replace(/[^0-9.-]/g, "")) || 0;
+}
+
+function detailForType(type, inputs, quantity){
+  const qSuffix = quantity > 1 ? ` × ${quantity}` : "";
+  if (type === "roofing"){
+    return `Contract ${fmt(inputs.price)}${inputs.completed ? " (completed)" : " (not completed)"}${qSuffix}`;
+  } else if (type === "inspection"){
+    return `Revenue ${fmt(inputs.revenue)} each${qSuffix}`;
+  } else if (type === "customhome"){
+    return `Contract ${fmt(inputs.price)} — first draw ${inputs.firstDrawCompleted ? "completed" : "not yet reached"}${qSuffix}`;
+  } else if (type === "remodel"){
+    return `Project ${fmt(inputs.price)}${inputs.completed ? " (completed)" : " (not completed)"}${qSuffix}`;
+  }
+}
+
+function openEntryForm(existingEntry){
+  const type = existingEntry ? existingEntry.type : document.getElementById("mp-type").value;
   const formEl = document.getElementById("mp-form");
   formEl.style.display = "block";
+  const inp = existingEntry ? existingEntry.inputs : null;
+  const qty = existingEntry ? existingEntry.quantity : 1;
+  editingEntryId = existingEntry ? existingEntry.id : null;
+
+  const qtyField = `
+    <div class="field" style="max-width:160px;">
+      <label>Quantity</label>
+      <input type="number" id="f-qty" value="${qty}" min="1" step="1">
+      <div class="hint">Use this for multiple identical events this month.</div>
+    </div>`;
 
   let html = "";
   if (type === "roofing"){
     html = `
-      <div class="checkbox-row"><input type="checkbox" id="f-inspScheduled" checked><label for="f-inspScheduled">Inspection scheduled</label></div>
-      <div class="checkbox-row"><input type="checkbox" id="f-contractApproved" checked><label for="f-contractApproved">Contract approved / signed</label></div>
+      <div class="checkbox-row"><input type="checkbox" id="f-inspScheduled" ${!inp || inp.inspScheduled ? "checked" : ""}><label for="f-inspScheduled">Inspection scheduled</label></div>
+      <div class="checkbox-row"><input type="checkbox" id="f-contractApproved" ${!inp || inp.contractApproved ? "checked" : ""}><label for="f-contractApproved">Contract approved / signed</label></div>
       <div class="row">
-        <div class="field"><label>Contracted job price ($)</label><input type="number" id="f-price" value="15000" min="0" step="100"></div>
-        <div class="field"><label>Job completed?</label><select id="f-completed"><option value="yes">Yes</option><option value="no">No</option></select></div>
+        <div class="field"><label>Contracted job price ($)</label><input type="number" id="f-price" value="${inp ? inp.price : 15000}" min="0" step="100"></div>
+        <div class="field"><label>Job completed?</label><select id="f-completed"><option value="yes" ${inp && !inp.completed ? "" : "selected"}>Yes</option><option value="no" ${inp && !inp.completed ? "selected" : ""}>No</option></select></div>
+        ${qtyField}
       </div>
-      <div class="checkbox-row"><input type="checkbox" id="f-maintenance"><label for="f-maintenance">Maintenance contract signed</label></div>
-      <button class="btn" onclick="addEntry('roofing')">Add to Month</button>
+      <div class="checkbox-row"><input type="checkbox" id="f-maintenance" ${inp && inp.maintenance ? "checked" : ""}><label for="f-maintenance">Maintenance contract signed</label></div>
+      <button class="btn" onclick="submitEntry('roofing')">${existingEntry ? "Save Changes" : "Add to Month"}</button>
       <button class="btn secondary" onclick="closeEntryForm()">Cancel</button>`;
   } else if (type === "inspection"){
     html = `
-      <div class="field"><label>Inspection revenue ($)</label><input type="number" id="f-revenue" value="1500" min="0" step="50"></div>
-      <button class="btn" onclick="addEntry('inspection')">Add to Month</button>
+      <div class="row">
+        <div class="field"><label>Inspection revenue ($ each)</label><input type="number" id="f-revenue" value="${inp ? inp.revenue : 1500}" min="0" step="50"></div>
+        ${qtyField}
+      </div>
+      <button class="btn" onclick="submitEntry('inspection')">${existingEntry ? "Save Changes" : "Add to Month"}</button>
       <button class="btn secondary" onclick="closeEntryForm()">Cancel</button>`;
   } else if (type === "customhome"){
     html = `
       <div class="row">
-        <div class="field"><label>Signed contract price ($, excl. land/change orders)</label><input type="number" id="f-chprice" value="650000" min="0" step="1000"></div>
-        <div class="field"><label>First draw completed this period?</label><select id="f-firstdraw"><option value="yes">Yes</option><option value="no">No</option></select></div>
+        <div class="field"><label>Signed contract price ($, excl. land/change orders)</label><input type="number" id="f-chprice" value="${inp ? inp.price : 650000}" min="0" step="1000"></div>
+        <div class="field"><label>First draw completed this period?</label><select id="f-firstdraw"><option value="yes" ${inp && !inp.firstDrawCompleted ? "" : "selected"}>Yes</option><option value="no" ${inp && !inp.firstDrawCompleted ? "selected" : ""}>No</option></select></div>
+        ${qtyField}
       </div>
-      <button class="btn" onclick="addEntry('customhome')">Add to Month</button>
+      <button class="btn" onclick="submitEntry('customhome')">${existingEntry ? "Save Changes" : "Add to Month"}</button>
       <button class="btn secondary" onclick="closeEntryForm()">Cancel</button>`;
   } else if (type === "remodel"){
     html = `
       <div class="row">
-        <div class="field"><label>Remodel project price ($)</label><input type="number" id="f-rmprice" value="150000" min="0" step="1000"></div>
-        <div class="field"><label>Project completed?</label><select id="f-rmcompleted"><option value="yes">Yes</option><option value="no">No</option></select></div>
+        <div class="field"><label>Remodel project price ($)</label><input type="number" id="f-rmprice" value="${inp ? inp.price : 150000}" min="0" step="1000"></div>
+        <div class="field"><label>Project completed?</label><select id="f-rmcompleted"><option value="yes" ${inp && !inp.completed ? "" : "selected"}>Yes</option><option value="no" ${inp && !inp.completed ? "selected" : ""}>No</option></select></div>
+        ${qtyField}
       </div>
-      <button class="btn" onclick="addEntry('remodel')">Add to Month</button>
+      <button class="btn" onclick="submitEntry('remodel')">${existingEntry ? "Save Changes" : "Add to Month"}</button>
       <button class="btn secondary" onclick="closeEntryForm()">Cancel</button>`;
   }
   formEl.innerHTML = html;
+  formEl.scrollIntoView({ behavior: "smooth", block: "nearest" });
 }
 
 function closeEntryForm(){
   document.getElementById("mp-form").style.display = "none";
   document.getElementById("mp-form").innerHTML = "";
+  editingEntryId = null;
 }
 
-function addEntry(type){
-  let result, detail;
+function submitEntry(type){
+  let inputs;
+  const quantity = Math.max(1, parseInt(document.getElementById("f-qty").value, 10) || 1);
+
   if (type === "roofing"){
-    const inputs = {
+    inputs = {
       inspScheduled: document.getElementById("f-inspScheduled").checked,
       contractApproved: document.getElementById("f-contractApproved").checked,
       price: parseFloat(document.getElementById("f-price").value) || 0,
       completed: document.getElementById("f-completed").value === "yes",
       maintenance: document.getElementById("f-maintenance").checked,
     };
-    result = computeRoofing(inputs);
-    detail = `Contract ${fmt(inputs.price)}${inputs.completed ? " (completed)" : " (not completed)"}`;
   } else if (type === "inspection"){
-    const revenue = parseFloat(document.getElementById("f-revenue").value) || 0;
-    result = computeInspection({revenue});
-    detail = `Revenue ${fmt(revenue)}`;
+    inputs = { revenue: parseFloat(document.getElementById("f-revenue").value) || 0 };
   } else if (type === "customhome"){
-    const price = parseFloat(document.getElementById("f-chprice").value) || 0;
-    const firstDrawCompleted = document.getElementById("f-firstdraw").value === "yes";
-    result = computeCustomHome({price, firstDrawCompleted});
-    detail = `Contract ${fmt(price)} — first draw ${firstDrawCompleted ? "completed" : "not yet reached"}`;
+    inputs = {
+      price: parseFloat(document.getElementById("f-chprice").value) || 0,
+      firstDrawCompleted: document.getElementById("f-firstdraw").value === "yes",
+    };
   } else if (type === "remodel"){
-    const price = parseFloat(document.getElementById("f-rmprice").value) || 0;
-    const completed = document.getElementById("f-rmcompleted").value === "yes";
-    result = computeRemodel({price, completed});
-    detail = `Project ${fmt(price)}${completed ? " (completed)" : " (not completed)"}`;
+    inputs = {
+      price: parseFloat(document.getElementById("f-rmprice").value) || 0,
+      completed: document.getElementById("f-rmcompleted").value === "yes",
+    };
   }
 
-  mpEntries.push({ id: mpNextId++, type, label: typeLabels[type], total: result.total, detail });
+  const result = computeForType(type, inputs, quantity);
+  const detail = detailForType(type, inputs, quantity);
+
+  if (editingEntryId){
+    const idx = mpEntries.findIndex(e => e.id === editingEntryId);
+    if (idx > -1){
+      mpEntries[idx] = { id: editingEntryId, type, quantity, inputs, label: typeLabels[type], total: result.total, detail };
+    }
+  } else {
+    mpEntries.push({ id: mpNextId++, type, quantity, inputs, label: typeLabels[type], total: result.total, detail });
+  }
+
   closeEntryForm();
   renderMonthly();
+}
+
+function editEntry(id){
+  const entry = mpEntries.find(e => e.id === id);
+  if (!entry) return;
+  document.getElementById("mp-type").value = entry.type;
+  openEntryForm(entry);
 }
 
 function removeEntry(id){
@@ -477,10 +533,8 @@ function removeEntry(id){
 }
 
 function clearCurrentEntries(){
-  if (mpEntries.length && !confirm("Clear all entries from the working table? This does not affect anything already saved.")) return;
+  if (mpEntries.length && !confirm("Clear all entries from the working table?")) return;
   mpEntries = [];
-  document.getElementById("sv-name").value = "";
-  document.getElementById("sv-month").value = "";
   renderMonthly();
 }
 
@@ -499,8 +553,12 @@ function renderMonthly(){
       <tr>
         <td>${e.label}</td>
         <td>${e.detail}</td>
+        <td class="qty">${e.quantity}</td>
         <td class="amt">${fmt(e.total)}</td>
-        <td class="act"><button class="remove-btn" onclick="removeEntry(${e.id})">Remove</button></td>
+        <td class="act">
+          <button class="edit-btn" onclick="editEntry(${e.id})">Edit</button>
+          <button class="remove-btn" onclick="removeEntry(${e.id})">Remove</button>
+        </td>
       </tr>
     `).join("");
   }
@@ -522,22 +580,10 @@ function renderMonthly(){
 
 renderMonthly();
 
-/* ---------- Save / Load / Export Projections (localStorage) ---------- */
-
-const STORAGE_KEY = "referralCommissionProjections";
-
-function loadSavedProjections(){
-  try {
-    return JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
-  } catch(e){ return []; }
-}
-function writeSavedProjections(list){
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(list));
-}
+/* ---------- PDF Export ---------- */
 
 function monthLabel(monthValue){
-  // monthValue like "2026-08" -> "August 2026"
-  if (!monthValue) return "Unspecified Month";
+  if (!monthValue) return "";
   const [y, m] = monthValue.split("-");
   const d = new Date(parseInt(y,10), parseInt(m,10)-1, 1);
   return d.toLocaleString("en-US", { month: "long", year: "numeric" });
@@ -547,128 +593,74 @@ function sanitizeFilename(str){
   return (str || "").trim().replace(/[^a-z0-9]+/gi, "-").replace(/^-+|-+$/g, "") || "untitled";
 }
 
-function saveProjection(){
+function showToast(msg, isError){
+  const toast = document.getElementById("sv-toast");
+  toast.style.display = "block";
+  toast.className = "flag " + (isError ? "no" : "ok");
+  toast.textContent = msg;
+}
+
+function exportPDF(){
+  if (mpEntries.length === 0){
+    showToast("Add at least one entry before exporting.", true);
+    return;
+  }
   const month = document.getElementById("sv-month").value;
   const name = document.getElementById("sv-name").value.trim();
-  const toast = document.getElementById("sv-toast");
+  const mLabel = monthLabel(month);
 
-  if (!month){
-    toast.style.display = "block";
-    toast.style.background = "#f7eaea"; toast.style.color = "#8a2b2b"; toast.style.border = "1px solid #e6c6c6";
-    toast.textContent = "Please select an invoice month before saving.";
-    return;
-  }
-  if (mpEntries.length === 0){
-    toast.style.display = "block";
-    toast.style.background = "#f7eaea"; toast.style.color = "#8a2b2b"; toast.style.border = "1px solid #e6c6c6";
-    toast.textContent = "Add at least one entry before saving a projection.";
-    return;
-  }
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({ unit: "pt", format: "letter" });
 
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(16);
+  doc.text("Referral Commission Projection", 40, 50);
+
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(10);
+  doc.setTextColor(100);
+  doc.text("Independent Contractor Agreement — Section 4.2 Referral Structure", 40, 68);
+
+  doc.setTextColor(30);
+  doc.setFontSize(11);
+  let y = 96;
+  if (mLabel){ doc.text(`Invoice Month: ${mLabel}`, 40, y); y += 16; }
+  if (name){ doc.text(`Name / Notes: ${name}`, 40, y); y += 16; }
+  doc.text(`Exported: ${new Date().toLocaleDateString()}`, 40, y);
+  y += 20;
+
+  const rows = mpEntries.map(e => [e.label, e.detail, String(e.quantity), fmt(e.total)]);
   const grand = mpEntries.reduce((sum, e) => sum + e.total, 0);
-  const record = {
-    id: Date.now(),
-    month,
-    monthLabel: monthLabel(month),
-    name,
-    total: grand,
-    entries: JSON.parse(JSON.stringify(mpEntries)),
-    savedAt: new Date().toISOString(),
-  };
 
-  const list = loadSavedProjections();
-  list.push(record);
-  writeSavedProjections(list);
+  doc.autoTable({
+    startY: y,
+    head: [["Service Line", "Details", "Qty", "Payout"]],
+    body: rows,
+    styles: { font: "helvetica", fontSize: 10, cellPadding: 6 },
+    headStyles: { fillColor: [43,43,43], textColor: 255, fontStyle: "bold" },
+    columnStyles: { 2: { halign: "center", cellWidth: 40 }, 3: { halign: "right", cellWidth: 90 } },
+    margin: { left: 40, right: 40 },
+  });
 
-  toast.style.display = "block";
-  toast.style.background = "#eaf4ee"; toast.style.color = "#2f6f4e"; toast.style.border = "1px solid #c7e3d2";
-  toast.textContent = `Saved "${name || "Untitled"}" for ${monthLabel(month)} (${fmt(grand)}). View it under "Saved Projections."`;
+  const afterTableY = doc.lastAutoTable.finalY + 24;
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(13);
+  doc.text("Total Projected Commission Income:", 40, afterTableY);
+  doc.text(fmt(grand), 555, afterTableY, { align: "right" });
+
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(8);
+  doc.setTextColor(120);
+  doc.text(
+    "Planning estimate only. Final payout is governed by the signed Independent Contractor Agreement and Company verification of each qualifying sale.",
+    40, afterTableY + 30, { maxWidth: 515 }
+  );
+
+  const filenameBase = (mLabel ? sanitizeFilename(mLabel) : "Commission-Projection") + (name ? "-" + sanitizeFilename(name) : "");
+  doc.save(filenameBase + ".pdf");
+
+  showToast(`Exported "${filenameBase}.pdf".`, false);
 }
-
-function renderSavedList(){
-  const list = loadSavedProjections().sort((a,b) => (b.month || "").localeCompare(a.month || "") || b.savedAt.localeCompare(a.savedAt));
-  const container = document.getElementById("saved-list");
-  const emptyEl = document.getElementById("saved-empty");
-
-  if (list.length === 0){
-    container.innerHTML = "";
-    emptyEl.style.display = "block";
-    return;
-  }
-  emptyEl.style.display = "none";
-
-  container.innerHTML = list.map(r => `
-    <div class="saved-row">
-      <div class="meta">
-        <b>${r.monthLabel}${r.name ? " — " + escapeHtml(r.name) : ""}</b>
-        <span>${fmt(r.total)} projected · ${r.entries.length} entr${r.entries.length===1?"y":"ies"} · saved ${new Date(r.savedAt).toLocaleDateString()}</span>
-      </div>
-      <div class="actions">
-        <button class="btn secondary small" onclick="loadProjection(${r.id})">Load</button>
-        <button class="btn secondary small" onclick="exportProjection(${r.id})">Export CSV</button>
-        <button class="btn secondary small" onclick="deleteProjection(${r.id})" style="color:#8a2b2b;border-color:#e6c6c6;">Delete</button>
-      </div>
-    </div>
-  `).join("");
-}
-
-function escapeHtml(str){
-  return String(str).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
-}
-
-function loadProjection(id){
-  const list = loadSavedProjections();
-  const r = list.find(x => x.id === id);
-  if (!r) return;
-  if (mpEntries.length && !confirm("Loading will replace the current working entries in the Monthly Projection tab. Continue?")) return;
-  mpEntries = JSON.parse(JSON.stringify(r.entries));
-  mpNextId = Math.max(0, ...mpEntries.map(e => e.id)) + 1;
-  document.getElementById("sv-month").value = r.month;
-  document.getElementById("sv-name").value = r.name || "";
-  renderMonthly();
-  switchTab("monthly");
-}
-
-function deleteProjection(id){
-  if (!confirm("Delete this saved projection? This cannot be undone.")) return;
-  const list = loadSavedProjections().filter(x => x.id !== id);
-  writeSavedProjections(list);
-  renderSavedList();
-}
-
-function exportProjection(id){
-  const list = loadSavedProjections();
-  const r = list.find(x => x.id === id);
-  if (!r) return;
-
-  const rows = [];
-  rows.push(["Invoice Month", r.monthLabel]);
-  rows.push(["Projection Name", r.name || ""]);
-  rows.push(["Saved On", new Date(r.savedAt).toLocaleString()]);
-  rows.push([]);
-  rows.push(["Service Line", "Details", "Payout"]);
-  r.entries.forEach(e => rows.push([e.label, e.detail, e.total.toFixed(2)]));
-  rows.push([]);
-  rows.push(["", "Total Projected Commission", r.total.toFixed(2)]);
-
-  const csv = rows.map(row => row.map(cell => {
-    const s = String(cell ?? "");
-    return /[",\n]/.test(s) ? `"${s.replace(/"/g,'""')}"` : s;
-  }).join(",")).join("\n");
-
-  const filenameBase = sanitizeFilename(r.monthLabel) + (r.name ? "-" + sanitizeFilename(r.name) : "") + "-Commission-Projection";
-  const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = filenameBase + ".csv";
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  URL.revokeObjectURL(url);
-}
-
-renderSavedList();
 </script>
 </body>
 </html>
