@@ -73,6 +73,13 @@
   .subcard .lbl{font-size:11px;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);}
   .subcard .val{font-size:18px;font-weight:700;margin-top:4px;}
   .empty-state{color:var(--muted);font-size:13px;padding:16px 0;text-align:center;}
+  .divider{border:0;border-top:1px solid var(--line);margin:28px 0 20px;}
+  .saved-row{display:flex;justify-content:space-between;align-items:center;padding:10px 12px;border:1px solid var(--line);border-radius:6px;margin-bottom:8px;background:#fafafa;flex-wrap:wrap;gap:8px;}
+  .saved-row .meta{font-size:13px;}
+  .saved-row .meta b{display:block;font-size:14px;}
+  .saved-row .meta span{color:var(--muted);font-size:12px;}
+  .saved-row .actions{display:flex;gap:6px;flex-wrap:wrap;}
+  .save-toast{margin-top:10px;padding:10px 12px;border-radius:5px;font-size:13px;background:#eaf4ee;color:var(--good);border:1px solid #c7e3d2;display:none;}
 </style>
 </head>
 <body>
@@ -85,6 +92,7 @@
 
   <div class="tabs">
     <div class="tab active" data-tab="monthly">Monthly Projection</div>
+    <div class="tab" data-tab="saved">Saved Projections</div>
     <div class="tab" data-tab="roofing">Roofing Services</div>
     <div class="tab" data-tab="inspection">Inspection Services</div>
     <div class="tab" data-tab="customhome">Custom Home</div>
@@ -129,6 +137,31 @@
       </div>
       <div id="mp-grandtotal">$0.00</div>
     </div>
+
+    <hr class="divider">
+
+    <h3 style="margin:0 0 10px;font-size:15px;">Save This Projection for Invoicing</h3>
+    <div class="clause">Give this projection a name and select the month the invoice will be issued for. Saving stores it in this browser under "Saved Projections," where you can reopen, re-load, export as a CSV file (named after the invoice month), or delete it later.</div>
+    <div class="row">
+      <div class="field">
+        <label>Invoice Month</label>
+        <input type="month" id="sv-month">
+      </div>
+      <div class="field">
+        <label>Name / Identifying Notes</label>
+        <input type="text" id="sv-name" placeholder="e.g., Brand Ambassador — August Referral Commissions">
+      </div>
+    </div>
+    <button class="btn" onclick="saveProjection()">Save Projection</button>
+    <button class="btn secondary" onclick="clearCurrentEntries()">Clear Entries</button>
+    <div class="save-toast" id="sv-toast"></div>
+  </div>
+
+  <!-- SAVED PROJECTIONS -->
+  <div class="panel" id="saved">
+    <div class="clause">Projections you've saved from the Monthly Projection tab. Load one back into the working table, export it as a CSV file for invoicing, or delete it. Saved projections persist in this browser only.</div>
+    <div id="saved-list"></div>
+    <div id="saved-empty" class="empty-state">No saved projections yet. Build a monthly projection, then use "Save Projection" to store it here.</div>
   </div>
 
   <!-- ROOFING -->
@@ -211,7 +244,7 @@
 
   <footer>
     Figures reflect the referral bonus schedule as written in Section 4.2 of the Independent Contractor Agreement.
-    This calculator is a planning tool only — final payout is governed by the signed Agreement and Company's verification of each qualifying sale.
+    This calculator is a planning tool only — final payout is governed by the signed Agreement and Company's verification of each qualifying sale. Saved projections are stored locally in this browser (not on a server) — export a CSV copy for any record you need to keep long-term.
   </footer>
 </div>
 
@@ -221,6 +254,7 @@ const fmt = (n) => "$" + n.toLocaleString("en-US", {minimumFractionDigits:2, max
 function switchTab(tabName){
   document.querySelectorAll(".tab").forEach(t=>t.classList.toggle("active", t.dataset.tab===tabName));
   document.querySelectorAll(".panel").forEach(p=>p.classList.toggle("active", p.id===tabName));
+  if (tabName === "saved") renderSavedList();
 }
 document.querySelectorAll(".tab").forEach(t=>t.addEventListener("click", ()=>switchTab(t.dataset.tab)));
 
@@ -442,6 +476,14 @@ function removeEntry(id){
   renderMonthly();
 }
 
+function clearCurrentEntries(){
+  if (mpEntries.length && !confirm("Clear all entries from the working table? This does not affect anything already saved.")) return;
+  mpEntries = [];
+  document.getElementById("sv-name").value = "";
+  document.getElementById("sv-month").value = "";
+  renderMonthly();
+}
+
 function renderMonthly(){
   const tbody = document.getElementById("mp-tbody");
   const emptyEl = document.getElementById("mp-empty");
@@ -479,6 +521,154 @@ function renderMonthly(){
 }
 
 renderMonthly();
+
+/* ---------- Save / Load / Export Projections (localStorage) ---------- */
+
+const STORAGE_KEY = "referralCommissionProjections";
+
+function loadSavedProjections(){
+  try {
+    return JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
+  } catch(e){ return []; }
+}
+function writeSavedProjections(list){
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(list));
+}
+
+function monthLabel(monthValue){
+  // monthValue like "2026-08" -> "August 2026"
+  if (!monthValue) return "Unspecified Month";
+  const [y, m] = monthValue.split("-");
+  const d = new Date(parseInt(y,10), parseInt(m,10)-1, 1);
+  return d.toLocaleString("en-US", { month: "long", year: "numeric" });
+}
+
+function sanitizeFilename(str){
+  return (str || "").trim().replace(/[^a-z0-9]+/gi, "-").replace(/^-+|-+$/g, "") || "untitled";
+}
+
+function saveProjection(){
+  const month = document.getElementById("sv-month").value;
+  const name = document.getElementById("sv-name").value.trim();
+  const toast = document.getElementById("sv-toast");
+
+  if (!month){
+    toast.style.display = "block";
+    toast.style.background = "#f7eaea"; toast.style.color = "#8a2b2b"; toast.style.border = "1px solid #e6c6c6";
+    toast.textContent = "Please select an invoice month before saving.";
+    return;
+  }
+  if (mpEntries.length === 0){
+    toast.style.display = "block";
+    toast.style.background = "#f7eaea"; toast.style.color = "#8a2b2b"; toast.style.border = "1px solid #e6c6c6";
+    toast.textContent = "Add at least one entry before saving a projection.";
+    return;
+  }
+
+  const grand = mpEntries.reduce((sum, e) => sum + e.total, 0);
+  const record = {
+    id: Date.now(),
+    month,
+    monthLabel: monthLabel(month),
+    name,
+    total: grand,
+    entries: JSON.parse(JSON.stringify(mpEntries)),
+    savedAt: new Date().toISOString(),
+  };
+
+  const list = loadSavedProjections();
+  list.push(record);
+  writeSavedProjections(list);
+
+  toast.style.display = "block";
+  toast.style.background = "#eaf4ee"; toast.style.color = "#2f6f4e"; toast.style.border = "1px solid #c7e3d2";
+  toast.textContent = `Saved "${name || "Untitled"}" for ${monthLabel(month)} (${fmt(grand)}). View it under "Saved Projections."`;
+}
+
+function renderSavedList(){
+  const list = loadSavedProjections().sort((a,b) => (b.month || "").localeCompare(a.month || "") || b.savedAt.localeCompare(a.savedAt));
+  const container = document.getElementById("saved-list");
+  const emptyEl = document.getElementById("saved-empty");
+
+  if (list.length === 0){
+    container.innerHTML = "";
+    emptyEl.style.display = "block";
+    return;
+  }
+  emptyEl.style.display = "none";
+
+  container.innerHTML = list.map(r => `
+    <div class="saved-row">
+      <div class="meta">
+        <b>${r.monthLabel}${r.name ? " — " + escapeHtml(r.name) : ""}</b>
+        <span>${fmt(r.total)} projected · ${r.entries.length} entr${r.entries.length===1?"y":"ies"} · saved ${new Date(r.savedAt).toLocaleDateString()}</span>
+      </div>
+      <div class="actions">
+        <button class="btn secondary small" onclick="loadProjection(${r.id})">Load</button>
+        <button class="btn secondary small" onclick="exportProjection(${r.id})">Export CSV</button>
+        <button class="btn secondary small" onclick="deleteProjection(${r.id})" style="color:#8a2b2b;border-color:#e6c6c6;">Delete</button>
+      </div>
+    </div>
+  `).join("");
+}
+
+function escapeHtml(str){
+  return String(str).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+}
+
+function loadProjection(id){
+  const list = loadSavedProjections();
+  const r = list.find(x => x.id === id);
+  if (!r) return;
+  if (mpEntries.length && !confirm("Loading will replace the current working entries in the Monthly Projection tab. Continue?")) return;
+  mpEntries = JSON.parse(JSON.stringify(r.entries));
+  mpNextId = Math.max(0, ...mpEntries.map(e => e.id)) + 1;
+  document.getElementById("sv-month").value = r.month;
+  document.getElementById("sv-name").value = r.name || "";
+  renderMonthly();
+  switchTab("monthly");
+}
+
+function deleteProjection(id){
+  if (!confirm("Delete this saved projection? This cannot be undone.")) return;
+  const list = loadSavedProjections().filter(x => x.id !== id);
+  writeSavedProjections(list);
+  renderSavedList();
+}
+
+function exportProjection(id){
+  const list = loadSavedProjections();
+  const r = list.find(x => x.id === id);
+  if (!r) return;
+
+  const rows = [];
+  rows.push(["Invoice Month", r.monthLabel]);
+  rows.push(["Projection Name", r.name || ""]);
+  rows.push(["Saved On", new Date(r.savedAt).toLocaleString()]);
+  rows.push([]);
+  rows.push(["Service Line", "Details", "Payout"]);
+  r.entries.forEach(e => rows.push([e.label, e.detail, e.total.toFixed(2)]));
+  rows.push([]);
+  rows.push(["", "Total Projected Commission", r.total.toFixed(2)]);
+
+  const csv = rows.map(row => row.map(cell => {
+    const s = String(cell ?? "");
+    return /[",\n]/.test(s) ? `"${s.replace(/"/g,'""')}"` : s;
+  }).join(",")).join("\n");
+
+  const filenameBase = sanitizeFilename(r.monthLabel) + (r.name ? "-" + sanitizeFilename(r.name) : "") + "-Commission-Projection";
+  const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filenameBase + ".csv";
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+renderSavedList();
 </script>
 </body>
 </html>
