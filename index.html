@@ -6,6 +6,7 @@
 <title>Revup Marketing — Invoice Builder</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.4.0/exceljs.min.js"></script>
 <style>
   :root{
     --ink:#222; --muted:#6b6b6b; --line:#d9d9d9; --panel:#f7f7f7;
@@ -286,6 +287,7 @@
     </div>
     <button class="btn secondary" onclick="saveGoal('roofing')">Save Goal Scenario</button>
     <div class="flag" id="r-goal-toast" style="display:none;"></div>
+    <button class="btn secondary small" style="margin-top:10px;" onclick="exportGoalsToExcel('roofing')">Export Goals to Excel</button>
     <div id="r-goal-list" style="margin-top:14px;"></div>
   </div>
 
@@ -322,6 +324,7 @@
     </div>
     <button class="btn secondary" onclick="saveGoal('inspection')">Save Goal Scenario</button>
     <div class="flag" id="i-goal-toast" style="display:none;"></div>
+    <button class="btn secondary small" style="margin-top:10px;" onclick="exportGoalsToExcel('inspection')">Export Goals to Excel</button>
     <div id="i-goal-list" style="margin-top:14px;"></div>
   </div>
 
@@ -372,6 +375,7 @@
     </div>
     <button class="btn secondary" onclick="saveGoal('customhome')">Save Goal Scenario</button>
     <div class="flag" id="c-goal-toast" style="display:none;"></div>
+    <button class="btn secondary small" style="margin-top:10px;" onclick="exportGoalsToExcel('customhome')">Export Goals to Excel</button>
     <div id="c-goal-list" style="margin-top:14px;"></div>
   </div>
 
@@ -415,6 +419,7 @@
     </div>
     <button class="btn secondary" onclick="saveGoal('remodel')">Save Goal Scenario</button>
     <div class="flag" id="m-goal-toast" style="display:none;"></div>
+    <button class="btn secondary small" style="margin-top:10px;" onclick="exportGoalsToExcel('remodel')">Export Goals to Excel</button>
     <div id="m-goal-list" style="margin-top:14px;"></div>
   </div>
 
@@ -760,6 +765,77 @@ function renderGoalList(type){
     </div>
   `;
   }).join("");
+}
+
+/* ---------- Export saved goals to a formatted Excel file ---------- */
+
+async function exportGoalsToExcel(type){
+  const list = loadGoals(type).sort(function(a,b){ return b.savedAt.localeCompare(a.savedAt); });
+  const p = goalPrefix[type];
+  const toast = document.getElementById(p + "-goal-toast");
+
+  if (list.length === 0){
+    toast.style.display = "block"; toast.className = "flag no";
+    toast.textContent = "No saved goals yet for this service line to export.";
+    return;
+  }
+
+  const workbook = new ExcelJS.Workbook();
+  workbook.creator = "Revup Marketing";
+  workbook.created = new Date();
+
+  const sheetName = serviceLineLabels[type] + " Goals";
+  const sheet = workbook.addWorksheet(sheetName, {
+    views: [{ state: "frozen", ySplit: 1 }],
+  });
+
+  sheet.columns = [
+    { header: "Goal Name", key: "name", width: 28 },
+    { header: "Target Month", key: "month", width: 18 },
+    { header: "Scenario Details", key: "detail", width: 45 },
+    { header: "Target Commission", key: "total", width: 20 },
+    { header: "Saved On", key: "savedAt", width: 16 },
+  ];
+
+  const headerRow = sheet.getRow(1);
+  headerRow.eachCell(function(cell){
+    cell.font = { bold: true, color: { argb: "FFFFFFFF" } };
+    cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FF2B2B2B" } };
+    cell.alignment = { vertical: "middle" };
+  });
+
+  list.forEach(function(g){
+    const row = sheet.addRow({
+      name: g.name,
+      month: g.monthLabel || "—",
+      detail: g.detail,
+      total: g.total,
+      savedAt: new Date(g.savedAt).toLocaleDateString(),
+    });
+    row.getCell("total").numFmt = '"$"#,##0.00';
+    row.eachCell(function(cell){
+      cell.alignment = { vertical: "middle", wrapText: true };
+    });
+  });
+
+  // Totals row
+  const totalRow = sheet.addRow({ name: "", month: "", detail: "Total of all saved goals", total: list.reduce(function(s,g){ return s + g.total; }, 0), savedAt: "" });
+  totalRow.font = { bold: true };
+  totalRow.getCell("total").numFmt = '"$"#,##0.00';
+
+  const buffer = await workbook.xlsx.writeBuffer();
+  const blob = new Blob([buffer], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = serviceLineLabels[type].replace(/\s+/g, "-") + "-Goal-Scenarios.xlsx";
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+
+  toast.style.display = "block"; toast.className = "flag ok";
+  toast.textContent = "Exported " + list.length + " goal scenario" + (list.length === 1 ? "" : "s") + " to Excel.";
 }
 
 /* ---------- Combined Overview (all four calculators) ---------- */
