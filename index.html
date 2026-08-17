@@ -85,6 +85,13 @@
   .biz-card .biz-name{font-size:18px;font-weight:700;margin:0 0 10px;}
   .billto{font-size:13px;color:var(--muted);margin-bottom:16px;}
   .billto b{color:var(--ink);}
+  .goal-row{display:flex;justify-content:space-between;align-items:center;padding:10px 12px;border:1px solid var(--line);border-radius:6px;margin-bottom:8px;background:#fafafa;flex-wrap:wrap;gap:8px;}
+  .goal-row .meta{font-size:13px;}
+  .goal-row .meta b{display:block;font-size:14px;}
+  .goal-row .meta span{color:var(--muted);font-size:12px;}
+  .combine-row{display:flex;justify-content:space-between;align-items:center;padding:10px 12px;border-bottom:1px solid var(--line);font-size:14px;}
+  .combine-row:last-child{border-bottom:none;}
+  .combine-row .amt{font-weight:700;}
 </style>
 </head>
 <body>
@@ -92,15 +99,16 @@
   <header>
     <div class="kicker">Independent Contractor Agreement — Section 4.2</div>
     <h1>Revup Marketing — Commission Invoice Builder</h1>
-    <p>Build a monthly referral commission and expense reimbursement invoice, then export it as a final PDF to submit to Murray Custom Homes, Roofing &amp; Inspections.</p>
+    <p>Estimate referral commissions per service line, set monthly goals, combine them into one picture, and build your final invoice.</p>
   </header>
 
   <div class="tabs">
     <div class="tab active" data-tab="monthly">Build Invoice</div>
-    <div class="tab" data-tab="roofing">Roofing Services</div>
-    <div class="tab" data-tab="inspection">Inspection Services</div>
-    <div class="tab" data-tab="customhome">Custom Home</div>
-    <div class="tab" data-tab="remodel">Remodel</div>
+    <div class="tab" data-tab="roofing">Roofing Calculator</div>
+    <div class="tab" data-tab="inspection">Inspection Calculator</div>
+    <div class="tab" data-tab="customhome">Custom Home Calculator</div>
+    <div class="tab" data-tab="remodel">Remodel Calculator</div>
+    <div class="tab" data-tab="combined">Combined Overview</div>
   </div>
 
   <!-- BUILD INVOICE -->
@@ -233,89 +241,211 @@
     <div class="flag" id="sv-toast" style="display:none;"></div>
   </div>
 
-  <!-- ROOFING -->
+  <!-- ROOFING CALCULATOR -->
   <div class="panel" id="roofing">
-    <div class="clause">Flat $50 per inspection scheduled · Flat $100 per approved signed contract + 3% of contract price upon completion (only if contract ≥ $10,000) · Flat $200 per signed maintenance contract.</div>
+    <div class="section-heading">Roofing Calculator</div>
+    <div class="clause">Flat $50 per inspection scheduled · Flat $100 per approved signed contract + 3% of contract price upon completion (only if contract ≥ $10,000) · Flat $200 per signed maintenance contract. All fields default to unchecked/zero so nothing gets counted by accident — check only what actually applies.</div>
 
-    <div class="checkbox-row"><input type="checkbox" id="r-inspScheduled" checked><label for="r-inspScheduled">Inspection scheduled</label></div>
-    <div class="checkbox-row"><input type="checkbox" id="r-contractApproved" checked><label for="r-contractApproved">Contract approved / signed</label></div>
+    <div class="checkbox-row"><input type="checkbox" id="r-inspScheduled"><label for="r-inspScheduled">Inspection scheduled</label></div>
+    <div class="checkbox-row"><input type="checkbox" id="r-contractApproved"><label for="r-contractApproved">Contract approved / signed</label></div>
     <div class="row">
       <div class="field">
         <label>Contracted job price ($)</label>
-        <input type="number" id="r-price" value="15000" min="0" step="100">
+        <input type="number" id="r-price" value="0" min="0" step="100">
         <div class="hint">3% completion bonus only applies if this is $10,000 or more.</div>
       </div>
       <div class="field">
         <label>Job completed?</label>
         <select id="r-completed">
-          <option value="yes" selected>Yes — job completed</option>
-          <option value="no">Not yet completed</option>
+          <option value="no" selected>No — not completed</option>
+          <option value="yes">Yes — job completed</option>
         </select>
+      </div>
+      <div class="field" style="max-width:160px;">
+        <label>Quantity</label>
+        <input type="number" id="r-qty" value="1" min="1" step="1">
+        <div class="hint">Set to 10 for 10 identical jobs, etc.</div>
       </div>
     </div>
     <div class="checkbox-row"><input type="checkbox" id="r-maintenance"><label for="r-maintenance">Maintenance contract signed (from this lead)</label></div>
     <button class="btn" onclick="calcRoofing()">Calculate</button>
     <div class="result" id="r-result" style="display:none;"></div>
-  </div>
 
-  <!-- INSPECTION -->
-  <div class="panel" id="inspection">
-    <div class="clause">Flat $100 per closed inspection, paid at completion. If a single inspection's combined revenue exceeds $2,000, Contractor receives 10% of that revenue <strong>instead of</strong> the $100 flat fee (whichever tier applies, not both).</div>
+    <hr class="divider">
+    <div class="section-heading" style="font-size:14px;">Save as Goal Scenario</div>
+    <div class="clause">Save this scenario as a monthly goal (e.g., "Do 10 roofing jobs at $15,000 this month"). Come back later to compare against what you actually invoiced.</div>
     <div class="row">
       <div class="field">
-        <label>Inspection revenue ($)</label>
-        <input type="number" id="i-revenue" value="1500" min="0" step="50">
+        <label>Goal Name</label>
+        <input type="text" id="r-goal-name" placeholder="e.g., August Roofing Goal">
+      </div>
+      <div class="field">
+        <label>Target Month (optional)</label>
+        <input type="month" id="r-goal-month">
+      </div>
+    </div>
+    <button class="btn secondary" onclick="saveGoal('roofing')">Save Goal Scenario</button>
+    <div class="flag" id="r-goal-toast" style="display:none;"></div>
+    <div id="r-goal-list" style="margin-top:14px;"></div>
+  </div>
+
+  <!-- INSPECTION CALCULATOR -->
+  <div class="panel" id="inspection">
+    <div class="section-heading">Inspection Calculator</div>
+    <div class="clause">Flat $100 per closed inspection, paid at completion. If a single inspection's combined revenue exceeds $2,000, Contractor receives 10% of that revenue <strong>instead of</strong> the $100 flat fee (whichever tier applies, not both). Fields default to zero so nothing is counted unless you enter it.</div>
+    <div class="row">
+      <div class="field">
+        <label>Inspection revenue ($ each)</label>
+        <input type="number" id="i-revenue" value="0" min="0" step="50">
+      </div>
+      <div class="field" style="max-width:160px;">
+        <label>Quantity</label>
+        <input type="number" id="i-qty" value="1" min="1" step="1">
+        <div class="hint">Set to 10 for 10 identical inspections, etc.</div>
       </div>
     </div>
     <button class="btn" onclick="calcInspection()">Calculate</button>
     <div class="result" id="i-result" style="display:none;"></div>
-  </div>
 
-  <!-- CUSTOM HOME -->
-  <div class="panel" id="customhome">
-    <div class="clause">Flat $200 paid <strong>at the time the contract is signed</strong>. Separately, 10 basis points (0.10%) of the initial contract price applies if it exceeds $500,000 (excluding land and change orders) — <strong>this additional bonus is payable at first draw</strong>, independent of the signing bonus.</div>
+    <hr class="divider">
+    <div class="section-heading" style="font-size:14px;">Save as Goal Scenario</div>
+    <div class="clause">Save this scenario as a monthly goal. Come back later to compare against what you actually invoiced.</div>
     <div class="row">
       <div class="field">
-        <label>Signed custom home contract price ($, excl. land/change orders)</label>
-        <input type="number" id="c-price" value="650000" min="0" step="1000">
+        <label>Goal Name</label>
+        <input type="text" id="i-goal-name" placeholder="e.g., August Inspection Goal">
+      </div>
+      <div class="field">
+        <label>Target Month (optional)</label>
+        <input type="month" id="i-goal-month">
+      </div>
+    </div>
+    <button class="btn secondary" onclick="saveGoal('inspection')">Save Goal Scenario</button>
+    <div class="flag" id="i-goal-toast" style="display:none;"></div>
+    <div id="i-goal-list" style="margin-top:14px;"></div>
+  </div>
+
+  <!-- CUSTOM HOME CALCULATOR -->
+  <div class="panel" id="customhome">
+    <div class="section-heading">Custom Home Calculator</div>
+    <div class="clause">Flat $200 paid <strong>at the time the contract is signed</strong>. Separately, 10 basis points (0.10%) of the initial contract price applies if it exceeds $500,000 (excluding land and change orders) — <strong>this additional bonus is payable at first draw</strong>, independent of the signing bonus. Defaults are unchecked/zero — nothing counts until you set it.</div>
+    <div class="row">
+      <div class="field">
+        <label>Contract price ($, excl. land/change orders)</label>
+        <input type="number" id="c-price" value="0" min="0" step="1000">
       </div>
       <div class="field">
         <label>Contract signed this period?</label>
         <select id="c-signed">
-          <option value="yes" selected>Yes — contract signed</option>
-          <option value="no">No — not yet signed</option>
+          <option value="no" selected>No — not yet signed</option>
+          <option value="yes">Yes — contract signed</option>
         </select>
       </div>
       <div class="field">
         <label>First draw completed this period?</label>
         <select id="c-firstdraw">
-          <option value="yes" selected>Yes — first draw completed</option>
-          <option value="no">No — first draw not yet reached</option>
+          <option value="no" selected>No — first draw not yet reached</option>
+          <option value="yes">Yes — first draw completed</option>
         </select>
+      </div>
+      <div class="field" style="max-width:160px;">
+        <label>Quantity</label>
+        <input type="number" id="c-qty" value="1" min="1" step="1">
+        <div class="hint">Set to 2+ for multiple identical contracts, etc.</div>
       </div>
     </div>
     <button class="btn" onclick="calcCustomHome()">Calculate</button>
     <div class="result" id="c-result" style="display:none;"></div>
+
+    <hr class="divider">
+    <div class="section-heading" style="font-size:14px;">Save as Goal Scenario</div>
+    <div class="clause">Save this scenario as a monthly goal. Come back later to compare against what you actually invoiced.</div>
+    <div class="row">
+      <div class="field">
+        <label>Goal Name</label>
+        <input type="text" id="c-goal-name" placeholder="e.g., August Custom Home Goal">
+      </div>
+      <div class="field">
+        <label>Target Month (optional)</label>
+        <input type="month" id="c-goal-month">
+      </div>
+    </div>
+    <button class="btn secondary" onclick="saveGoal('customhome')">Save Goal Scenario</button>
+    <div class="flag" id="c-goal-toast" style="display:none;"></div>
+    <div id="c-goal-list" style="margin-top:14px;"></div>
   </div>
 
-  <!-- REMODEL -->
+  <!-- REMODEL CALCULATOR -->
   <div class="panel" id="remodel">
-    <div class="clause">2% of project price · Eligible only upon project completion · Project must be at least $100,000 to qualify.</div>
+    <div class="section-heading">Remodel Calculator</div>
+    <div class="clause">2% of project price · Eligible only upon project completion · Project must be at least $100,000 to qualify. Defaults are unchecked/zero — nothing counts until you set it.</div>
     <div class="row">
       <div class="field">
         <label>Remodel project price ($)</label>
-        <input type="number" id="m-price" value="150000" min="0" step="1000">
+        <input type="number" id="m-price" value="0" min="0" step="1000">
       </div>
       <div class="field">
         <label>Project completed?</label>
         <select id="m-completed">
-          <option value="yes" selected>Yes — completed</option>
-          <option value="no">Not yet completed</option>
+          <option value="no" selected>No — not completed</option>
+          <option value="yes">Yes — completed</option>
         </select>
+      </div>
+      <div class="field" style="max-width:160px;">
+        <label>Quantity</label>
+        <input type="number" id="m-qty" value="1" min="1" step="1">
+        <div class="hint">Set to 2+ for multiple identical projects, etc.</div>
       </div>
     </div>
     <button class="btn" onclick="calcRemodel()">Calculate</button>
     <div class="result" id="m-result" style="display:none;"></div>
+
+    <hr class="divider">
+    <div class="section-heading" style="font-size:14px;">Save as Goal Scenario</div>
+    <div class="clause">Save this scenario as a monthly goal. Come back later to compare against what you actually invoiced.</div>
+    <div class="row">
+      <div class="field">
+        <label>Goal Name</label>
+        <input type="text" id="m-goal-name" placeholder="e.g., August Remodel Goal">
+      </div>
+      <div class="field">
+        <label>Target Month (optional)</label>
+        <input type="month" id="m-goal-month">
+      </div>
+    </div>
+    <button class="btn secondary" onclick="saveGoal('remodel')">Save Goal Scenario</button>
+    <div class="flag" id="m-goal-toast" style="display:none;"></div>
+    <div id="m-goal-list" style="margin-top:14px;"></div>
+  </div>
+
+  <!-- COMBINED OVERVIEW -->
+  <div class="panel" id="combined">
+    <div class="section-heading">Combined Monthly Overview</div>
+    <div class="clause">Pulls the current numbers you've entered on the Roofing, Inspection, Custom Home, and Remodel calculators (including quantities) and combines them into one total — a complete picture of what you could earn that month across every service line. Update the individual calculators first, then click Combine.</div>
+    <button class="btn" onclick="combineAllServiceLines()">Combine All Service Lines</button>
+
+    <div id="combined-empty" class="empty-state">Click "Combine All Service Lines" to see your combined monthly picture.</div>
+    <div id="combined-results" style="display:none;">
+      <div class="result" style="margin-top:20px;">
+        <h3>Combined Breakdown</h3>
+        <div id="combined-rows"></div>
+      </div>
+      <div class="grand-total">
+        <div>
+          Combined Estimated Monthly Commission
+          <span class="sub">Roofing + Inspection + Custom Home + Remodel</span>
+        </div>
+        <div id="combined-grandtotal">$0.00</div>
+      </div>
+      <div class="row" style="margin-top:20px;">
+        <div class="field">
+          <label>Label for this combined estimate (optional, appears on PDF)</label>
+          <input type="text" id="combined-label" placeholder="e.g., August Monthly Goal — All Service Lines">
+        </div>
+      </div>
+      <button class="btn" onclick="exportCombinedPDF()">Save Combined Overview as PDF</button>
+      <div class="flag" id="combined-toast" style="display:none;"></div>
+    </div>
   </div>
 
   <footer>
@@ -339,6 +469,19 @@ document.querySelectorAll(".tab").forEach(t=>t.addEventListener("click", ()=>swi
   const iso = d.toISOString().slice(0,10);
   document.getElementById("inv-date").value = iso;
 })();
+
+function escapeAttr(str){
+  return String(str || "").replace(/"/g, "&quot;");
+}
+function escapeHtml(str){
+  return String(str || "").replace(/[&<>"']/g, function(c){
+    const map = {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"};
+    return map[c];
+  });
+}
+function parseCurrency(str){
+  return parseFloat(String(str).replace(/[^0-9.-]/g, "")) || 0;
+}
 
 function renderResult(elId, lines, total, flags){
   const el = document.getElementById(elId);
@@ -386,10 +529,12 @@ function computeInspection({revenue}){
     total = revenue * 0.10;
     lines.push({label:`Revenue tier — 10% of ${fmt(revenue)} (replaces flat fee)`, amount: fmt(total)});
     flags.push({ok:true, text:"Revenue exceeds $2,000 — Contractor receives 10% of revenue instead of the $100 flat fee."});
-  } else {
+  } else if (revenue > 0){
     total = 100;
     lines.push({label:"Closed inspection (flat, at completion)", amount: fmt(100)});
     flags.push({ok:true, text:"Revenue is $2,000 or less — the $100 flat fee applies."});
+  } else {
+    flags.push({ok:false, text:"No revenue entered — nothing to calculate yet."});
   }
   flags.push({ok:true, text:"Any additional services generated by this lead are paid at the current agreed rate for that service line (not calculated here)."});
   return {total, lines, flags};
@@ -437,52 +582,6 @@ function computeRemodel({price, completed}){
   return {total, lines, flags};
 }
 
-/* ---------- Single-scenario tab handlers ---------- */
-
-function calcRoofing(){
-  const r = computeRoofing({
-    inspScheduled: document.getElementById("r-inspScheduled").checked,
-    contractApproved: document.getElementById("r-contractApproved").checked,
-    price: parseFloat(document.getElementById("r-price").value) || 0,
-    completed: document.getElementById("r-completed").value === "yes",
-    maintenance: document.getElementById("r-maintenance").checked,
-  });
-  renderResult("r-result", r.lines, r.total, r.flags);
-}
-
-function calcInspection(){
-  const r = computeInspection({ revenue: parseFloat(document.getElementById("i-revenue").value) || 0 });
-  renderResult("i-result", r.lines, r.total, r.flags);
-}
-
-function calcCustomHome(){
-  const r = computeCustomHome({
-    price: parseFloat(document.getElementById("c-price").value) || 0,
-    signed: document.getElementById("c-signed").value === "yes",
-    firstDrawCompleted: document.getElementById("c-firstdraw").value === "yes",
-  });
-  renderResult("c-result", r.lines, r.total, r.flags);
-}
-
-function calcRemodel(){
-  const r = computeRemodel({
-    price: parseFloat(document.getElementById("m-price").value) || 0,
-    completed: document.getElementById("m-completed").value === "yes",
-  });
-  renderResult("m-result", r.lines, r.total, r.flags);
-}
-
-// initial calc on load for single tabs
-calcRoofing(); calcInspection(); calcCustomHome(); calcRemodel();
-
-/* ---------- Commission entries (add / edit / remove / quantity / per-entry client note) ---------- */
-
-let mpEntries = []; // {id, type, quantity, inputs, clientNote, label, total, detail}
-let mpNextId = 1;
-let editingEntryId = null; // set when editing an existing entry
-
-const typeLabels = { roofing:"Roofing", inspection:"Inspection", customhome:"Custom Home", remodel:"Remodel" };
-
 function computeForType(type, inputs, quantity){
   let result;
   if (type === "roofing") result = computeRoofing(inputs);
@@ -498,10 +597,6 @@ function computeForType(type, inputs, quantity){
   return { total: result.total * q, lines: scaledLines, flags: result.flags, quantity: q };
 }
 
-function parseCurrency(str){
-  return parseFloat(String(str).replace(/[^0-9.-]/g, "")) || 0;
-}
-
 function detailForType(type, inputs, quantity){
   const qSuffix = quantity > 1 ? ` × ${quantity}` : "";
   if (type === "roofing"){
@@ -515,15 +610,267 @@ function detailForType(type, inputs, quantity){
   }
 }
 
-function escapeAttr(str){
-  return String(str || "").replace(/"/g, "&quot;");
+/* ---------- Read current state from each individual calculator tab ---------- */
+
+function getRoofingState(){
+  return {
+    inputs: {
+      inspScheduled: document.getElementById("r-inspScheduled").checked,
+      contractApproved: document.getElementById("r-contractApproved").checked,
+      price: parseFloat(document.getElementById("r-price").value) || 0,
+      completed: document.getElementById("r-completed").value === "yes",
+      maintenance: document.getElementById("r-maintenance").checked,
+    },
+    quantity: Math.max(1, parseInt(document.getElementById("r-qty").value, 10) || 1),
+  };
 }
-function escapeHtml(str){
-  return String(str || "").replace(/[&<>"']/g, function(c){
-    const map = {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"};
-    return map[c];
+function getInspectionState(){
+  return {
+    inputs: { revenue: parseFloat(document.getElementById("i-revenue").value) || 0 },
+    quantity: Math.max(1, parseInt(document.getElementById("i-qty").value, 10) || 1),
+  };
+}
+function getCustomHomeState(){
+  return {
+    inputs: {
+      price: parseFloat(document.getElementById("c-price").value) || 0,
+      signed: document.getElementById("c-signed").value === "yes",
+      firstDrawCompleted: document.getElementById("c-firstdraw").value === "yes",
+    },
+    quantity: Math.max(1, parseInt(document.getElementById("c-qty").value, 10) || 1),
+  };
+}
+function getRemodelState(){
+  return {
+    inputs: {
+      price: parseFloat(document.getElementById("m-price").value) || 0,
+      completed: document.getElementById("m-completed").value === "yes",
+    },
+    quantity: Math.max(1, parseInt(document.getElementById("m-qty").value, 10) || 1),
+  };
+}
+
+const stateGetters = { roofing: getRoofingState, inspection: getInspectionState, customhome: getCustomHomeState, remodel: getRemodelState };
+const serviceLineLabels = { roofing: "Roofing", inspection: "Inspection", customhome: "Custom Home", remodel: "Remodel" };
+
+/* ---------- Single-scenario tab handlers (with quantity) ---------- */
+
+function calcRoofing(){
+  const s = getRoofingState();
+  const r = computeForType("roofing", s.inputs, s.quantity);
+  renderResult("r-result", r.lines, r.total, r.flags);
+}
+function calcInspection(){
+  const s = getInspectionState();
+  const r = computeForType("inspection", s.inputs, s.quantity);
+  renderResult("i-result", r.lines, r.total, r.flags);
+}
+function calcCustomHome(){
+  const s = getCustomHomeState();
+  const r = computeForType("customhome", s.inputs, s.quantity);
+  renderResult("c-result", r.lines, r.total, r.flags);
+}
+function calcRemodel(){
+  const s = getRemodelState();
+  const r = computeForType("remodel", s.inputs, s.quantity);
+  renderResult("m-result", r.lines, r.total, r.flags);
+}
+
+/* ---------- Goal scenarios (saved per service line, localStorage) ---------- */
+
+function goalStorageKey(type){ return "goalScenarios_" + type; }
+
+function loadGoals(type){
+  try { return JSON.parse(localStorage.getItem(goalStorageKey(type))) || []; }
+  catch(e){ return []; }
+}
+function writeGoals(type, list){
+  localStorage.setItem(goalStorageKey(type), JSON.stringify(list));
+}
+
+function goalMonthLabel(monthValue){
+  if (!monthValue) return "";
+  const parts = monthValue.split("-");
+  const d = new Date(parseInt(parts[0],10), parseInt(parts[1],10)-1, 1);
+  return d.toLocaleString("en-US", { month: "long", year: "numeric" });
+}
+
+const goalPrefix = { roofing: "r", inspection: "i", customhome: "c", remodel: "m" };
+
+function saveGoal(type){
+  const p = goalPrefix[type];
+  const name = document.getElementById(p + "-goal-name").value.trim();
+  const month = document.getElementById(p + "-goal-month").value;
+  const toast = document.getElementById(p + "-goal-toast");
+
+  if (!name){
+    toast.style.display = "block"; toast.className = "flag no";
+    toast.textContent = "Give this goal scenario a name before saving.";
+    return;
+  }
+
+  const state = stateGetters[type]();
+  const result = computeForType(type, state.inputs, state.quantity);
+  const detail = detailForType(type, state.inputs, state.quantity);
+
+  const list = loadGoals(type);
+  list.push({
+    id: Date.now(),
+    name,
+    month,
+    monthLabel: goalMonthLabel(month),
+    detail,
+    total: result.total,
+    savedAt: new Date().toISOString(),
   });
+  writeGoals(type, list);
+
+  toast.style.display = "block"; toast.className = "flag ok";
+  toast.textContent = `Saved goal "${name}" — target ${fmt(result.total)}.`;
+  renderGoalList(type);
 }
+
+function deleteGoal(type, id){
+  if (!confirm("Delete this saved goal scenario?")) return;
+  const list = loadGoals(type).filter(function(g){ return g.id !== id; });
+  writeGoals(type, list);
+  renderGoalList(type);
+}
+
+function renderGoalList(type){
+  const p = goalPrefix[type];
+  const container = document.getElementById(p + "-goal-list");
+  const list = loadGoals(type).sort(function(a,b){ return b.savedAt.localeCompare(a.savedAt); });
+
+  if (list.length === 0){
+    container.innerHTML = '<div class="empty-state">No saved goals yet for this service line.</div>';
+    return;
+  }
+
+  container.innerHTML = list.map(function(g){
+    return `
+    <div class="goal-row">
+      <div class="meta">
+        <b>${escapeHtml(g.name)}${g.monthLabel ? " — " + escapeHtml(g.monthLabel) : ""}</b>
+        <span>${escapeHtml(g.detail)} · target ${fmt(g.total)} · saved ${new Date(g.savedAt).toLocaleDateString()}</span>
+      </div>
+      <div>
+        <button class="remove-btn" onclick="deleteGoal('${type}', ${g.id})">Delete</button>
+      </div>
+    </div>
+  `;
+  }).join("");
+}
+
+/* ---------- Combined Overview (all four calculators) ---------- */
+
+let lastCombinedResults = null;
+
+function combineAllServiceLines(){
+  const types = ["roofing", "inspection", "customhome", "remodel"];
+  const results = types.map(function(type){
+    const state = stateGetters[type]();
+    const r = computeForType(type, state.inputs, state.quantity);
+    const detail = detailForType(type, state.inputs, state.quantity);
+    return { type, label: serviceLineLabels[type], detail, total: r.total };
+  });
+
+  lastCombinedResults = results;
+
+  const rowsEl = document.getElementById("combined-rows");
+  rowsEl.innerHTML = results.map(function(r){
+    return `<div class="combine-row"><span>${r.label} — ${escapeHtml(r.detail)}</span><span class="amt">${fmt(r.total)}</span></div>`;
+  }).join("");
+
+  const grand = results.reduce(function(sum, r){ return sum + r.total; }, 0);
+  document.getElementById("combined-grandtotal").textContent = fmt(grand);
+
+  document.getElementById("combined-empty").style.display = "none";
+  document.getElementById("combined-results").style.display = "block";
+}
+
+function exportCombinedPDF(){
+  if (!lastCombinedResults){
+    const toast = document.getElementById("combined-toast");
+    toast.style.display = "block"; toast.className = "flag no";
+    toast.textContent = "Click \"Combine All Service Lines\" first.";
+    return;
+  }
+  const label = document.getElementById("combined-label").value.trim();
+
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({ unit: "pt", format: "letter" });
+  const pageWidth = doc.internal.pageSize.getWidth();
+
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(18);
+  doc.setTextColor(30);
+  doc.text("Combined Monthly Commission Overview", 40, 50);
+
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(9.5);
+  doc.setTextColor(90);
+  doc.text("Revup Marketing — Referral Commission Estimate (Section 4.2)", 40, 66);
+  doc.text("Generated: " + new Date().toLocaleDateString(), 40, 78);
+  if (label){
+    doc.setFont("helvetica", "italic");
+    doc.text(label, 40, 92);
+  }
+
+  doc.setDrawColor(200);
+  doc.line(40, 104, pageWidth - 40, 104);
+
+  const rows = lastCombinedResults.map(function(r){
+    return [r.label, r.detail, fmt(r.total)];
+  });
+
+  doc.autoTable({
+    startY: 118,
+    head: [["Service Line", "Details", "Estimated Commission"]],
+    body: rows,
+    styles: { font: "helvetica", fontSize: 10, cellPadding: 7 },
+    headStyles: { fillColor: [43,43,43], textColor: 255, fontStyle: "bold" },
+    columnStyles: {
+      0: { cellWidth: 100 },
+      1: { cellWidth: 315 },
+      2: { halign: "right", cellWidth: 100 },
+    },
+    margin: { left: 40, right: 40 },
+  });
+
+  const y = doc.lastAutoTable.finalY + 24;
+  const grand = lastCombinedResults.reduce(function(sum, r){ return sum + r.total; }, 0);
+  doc.setDrawColor(30);
+  doc.setLineWidth(1);
+  doc.line(pageWidth - 260, y, pageWidth - 40, y);
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(13);
+  doc.text("Combined Estimated Total:", pageWidth - 260, y + 16);
+  doc.text(fmt(grand), pageWidth - 40, y + 16, { align: "right" });
+
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(8.5);
+  doc.setTextColor(120);
+  doc.text(
+    "Planning estimate only. Actual commission is determined by the signed Independent Contractor Agreement and Company verification of each qualifying sale.",
+    40, y + 44, { maxWidth: 515 }
+  );
+
+  const filenameBase = (label ? label.trim().replace(/[^a-z0-9]+/gi, "-").replace(/^-+|-+$/g, "") : "Combined-Commission-Overview");
+  doc.save(filenameBase + ".pdf");
+
+  const toast = document.getElementById("combined-toast");
+  toast.style.display = "block"; toast.className = "flag ok";
+  toast.textContent = `Saved "${filenameBase}.pdf".`;
+}
+
+/* ---------- Commission entries (Build Invoice tab: add / edit / remove / quantity / per-entry client note) ---------- */
+
+let mpEntries = []; // {id, type, quantity, inputs, clientNote, label, total, detail}
+let mpNextId = 1;
+let editingEntryId = null; // set when editing an existing entry
+
+const typeLabels = { roofing:"Roofing", inspection:"Inspection", customhome:"Custom Home", remodel:"Remodel" };
 
 function openEntryForm(existingEntry){
   const type = existingEntry ? existingEntry.type : document.getElementById("mp-type").value;
@@ -550,11 +897,11 @@ function openEntryForm(existingEntry){
   let html = "";
   if (type === "roofing"){
     html = `
-      <div class="checkbox-row"><input type="checkbox" id="f-inspScheduled" ${!inp || inp.inspScheduled ? "checked" : ""}><label for="f-inspScheduled">Inspection scheduled</label></div>
-      <div class="checkbox-row"><input type="checkbox" id="f-contractApproved" ${!inp || inp.contractApproved ? "checked" : ""}><label for="f-contractApproved">Contract approved / signed</label></div>
+      <div class="checkbox-row"><input type="checkbox" id="f-inspScheduled" ${inp && inp.inspScheduled ? "checked" : ""}><label for="f-inspScheduled">Inspection scheduled</label></div>
+      <div class="checkbox-row"><input type="checkbox" id="f-contractApproved" ${inp && inp.contractApproved ? "checked" : ""}><label for="f-contractApproved">Contract approved / signed</label></div>
       <div class="row">
-        <div class="field"><label>Contracted job price ($)</label><input type="number" id="f-price" value="${inp ? inp.price : 15000}" min="0" step="100"></div>
-        <div class="field"><label>Job completed?</label><select id="f-completed"><option value="yes" ${inp && !inp.completed ? "" : "selected"}>Yes</option><option value="no" ${inp && !inp.completed ? "selected" : ""}>No</option></select></div>
+        <div class="field"><label>Contracted job price ($)</label><input type="number" id="f-price" value="${inp ? inp.price : 0}" min="0" step="100"></div>
+        <div class="field"><label>Job completed?</label><select id="f-completed"><option value="no" ${inp && inp.completed ? "" : "selected"}>No</option><option value="yes" ${inp && inp.completed ? "selected" : ""}>Yes</option></select></div>
         ${qtyField}
       </div>
       <div class="checkbox-row"><input type="checkbox" id="f-maintenance" ${inp && inp.maintenance ? "checked" : ""}><label for="f-maintenance">Maintenance contract signed</label></div>
@@ -564,7 +911,7 @@ function openEntryForm(existingEntry){
   } else if (type === "inspection"){
     html = `
       <div class="row">
-        <div class="field"><label>Inspection revenue ($ each)</label><input type="number" id="f-revenue" value="${inp ? inp.revenue : 1500}" min="0" step="50"></div>
+        <div class="field"><label>Inspection revenue ($ each)</label><input type="number" id="f-revenue" value="${inp ? inp.revenue : 0}" min="0" step="50"></div>
         ${qtyField}
       </div>
       ${clientField}
@@ -573,9 +920,9 @@ function openEntryForm(existingEntry){
   } else if (type === "customhome"){
     html = `
       <div class="row">
-        <div class="field"><label>Contract price ($, excl. land/change orders)</label><input type="number" id="f-chprice" value="${inp ? inp.price : 650000}" min="0" step="1000"></div>
-        <div class="field"><label>Contract signed this period?</label><select id="f-signed"><option value="yes" ${inp && !inp.signed ? "" : "selected"}>Yes</option><option value="no" ${inp && !inp.signed ? "selected" : ""}>No</option></select></div>
-        <div class="field"><label>First draw completed this period?</label><select id="f-firstdraw"><option value="yes" ${inp && !inp.firstDrawCompleted ? "" : "selected"}>Yes</option><option value="no" ${inp && !inp.firstDrawCompleted ? "selected" : ""}>No</option></select></div>
+        <div class="field"><label>Contract price ($, excl. land/change orders)</label><input type="number" id="f-chprice" value="${inp ? inp.price : 0}" min="0" step="1000"></div>
+        <div class="field"><label>Contract signed this period?</label><select id="f-signed"><option value="no" ${inp && inp.signed ? "" : "selected"}>No</option><option value="yes" ${inp && inp.signed ? "selected" : ""}>Yes</option></select></div>
+        <div class="field"><label>First draw completed this period?</label><select id="f-firstdraw"><option value="no" ${inp && inp.firstDrawCompleted ? "" : "selected"}>No</option><option value="yes" ${inp && inp.firstDrawCompleted ? "selected" : ""}>Yes</option></select></div>
         ${qtyField}
       </div>
       ${clientField}
@@ -584,8 +931,8 @@ function openEntryForm(existingEntry){
   } else if (type === "remodel"){
     html = `
       <div class="row">
-        <div class="field"><label>Remodel project price ($)</label><input type="number" id="f-rmprice" value="${inp ? inp.price : 150000}" min="0" step="1000"></div>
-        <div class="field"><label>Project completed?</label><select id="f-rmcompleted"><option value="yes" ${inp && !inp.completed ? "" : "selected"}>Yes</option><option value="no" ${inp && !inp.completed ? "selected" : ""}>No</option></select></div>
+        <div class="field"><label>Remodel project price ($)</label><input type="number" id="f-rmprice" value="${inp ? inp.price : 0}" min="0" step="1000"></div>
+        <div class="field"><label>Project completed?</label><select id="f-rmcompleted"><option value="no" ${inp && inp.completed ? "" : "selected"}>No</option><option value="yes" ${inp && inp.completed ? "selected" : ""}>Yes</option></select></div>
         ${qtyField}
       </div>
       ${clientField}
@@ -707,7 +1054,6 @@ function renderMonthly(){
   document.getElementById("mp-grandtotal").textContent = fmt(grand);
   updateGrandTotalAll();
 }
-
 
 /* ---------- Expense reimbursements (with receipt photo attachment) ---------- */
 
@@ -857,8 +1203,7 @@ function updateGrandTotalAll(){
   document.getElementById("grand-total-all").textContent = fmt(commissionTotal + expenseTotal);
 }
 
-
-/* ---------- PDF Export (final invoice) ---------- */
+/* ---------- PDF Export (final invoice, Build Invoice tab) ---------- */
 
 function monthLabel(monthValue){
   if (!monthValue) return "";
@@ -1095,6 +1440,8 @@ function exportPDF(){
 }
 
 // Initial render (after all state variables and functions are defined)
+calcRoofing(); calcInspection(); calcCustomHome(); calcRemodel();
+renderGoalList("roofing"); renderGoalList("inspection"); renderGoalList("customhome"); renderGoalList("remodel");
 renderMonthly();
 renderExpenses();
 </script>
