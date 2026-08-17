@@ -99,7 +99,7 @@
 
   <!-- MONTHLY PROJECTION -->
   <div class="panel active" id="monthly">
-    <div class="clause">Add every commission event that applies for the month. Use the Quantity field for repeated identical events (e.g., 10 inspections scheduled at once). Give each entry a "Client / Reference" note so you can match it back to the right client when invoicing — you can add or edit that note any time. Every entry can be edited or removed afterward.</div>
+    <div class="clause">Add every commission event that applies for the month. Use the Quantity field for repeated identical events (e.g., 10 inspections scheduled at once). For Custom Home entries, the $200 signing bonus and the 10bp bonus are tracked separately since they're often earned in different months (signing vs. first draw). Give each entry a "Client / Reference" note so you can match it back to the right client when invoicing — you can add or edit that note any time. Every entry can be edited or removed afterward.</div>
 
     <div class="row">
       <div class="field" style="flex:0 0 200px;">
@@ -195,11 +195,18 @@
 
   <!-- CUSTOM HOME -->
   <div class="panel" id="customhome">
-    <div class="clause">Flat $200 upon verified signed custom home contract, plus 10 basis points (0.10%) of the initial contract price if it exceeds $500,000 (excluding land and change orders). <strong>The entire bonus is payable at first draw</strong> — it is not earned in the month the contract is signed unless first draw also occurs that month.</div>
+    <div class="clause">Flat $200 paid <strong>at the time the contract is signed</strong>. Separately, 10 basis points (0.10%) of the initial contract price applies if it exceeds $500,000 (excluding land and change orders) — <strong>this additional bonus is payable at first draw</strong>, independent of the signing bonus.</div>
     <div class="row">
       <div class="field">
         <label>Signed custom home contract price ($, excl. land/change orders)</label>
         <input type="number" id="c-price" value="650000" min="0" step="1000">
+      </div>
+      <div class="field">
+        <label>Contract signed this period?</label>
+        <select id="c-signed">
+          <option value="yes" selected>Yes — contract signed</option>
+          <option value="no">No — not yet signed</option>
+        </select>
       </div>
       <div class="field">
         <label>First draw completed this period?</label>
@@ -303,22 +310,30 @@ function computeInspection({revenue}){
   return {total, lines, flags};
 }
 
-function computeCustomHome({price, firstDrawCompleted}){
+function computeCustomHome({price, signed, firstDrawCompleted}){
   let total = 0, lines = [], flags = [];
-  if (!firstDrawCompleted){
-    flags.push({ok:false, text:"First draw has not occurred this period — the entire custom home bonus (flat + basis points) is not yet payable."});
-    return {total, lines, flags};
-  }
-  total += 200;
-  lines.push({label:"Signed custom home contract (flat, payable at first draw)", amount: fmt(200)});
-  if (price > 500000){
-    const bps = price * 0.0010; // 10 basis points = 0.10%
-    total += bps;
-    lines.push({label:`Basis-point bonus — 10 bp of ${fmt(price)}`, amount: fmt(bps)});
-    flags.push({ok:true, text:"Contract price exceeds $500,000 and first draw is complete — 10 basis point bonus applies this period."});
+
+  if (signed){
+    total += 200;
+    lines.push({label:"Signed custom home contract (flat, paid at signing)", amount: fmt(200)});
+    flags.push({ok:true, text:"Contract signed this period — $200 signing bonus applies."});
   } else {
-    flags.push({ok:false, text:"Contract price is $500,000 or less — basis-point bonus does not apply (flat $200 still applies since first draw is complete)."});
+    flags.push({ok:false, text:"Contract not yet signed this period — $200 signing bonus not yet earned."});
   }
+
+  if (firstDrawCompleted){
+    if (price > 500000){
+      const bps = price * 0.0010; // 10 basis points = 0.10%
+      total += bps;
+      lines.push({label:`Basis-point bonus — 10 bp of ${fmt(price)} (paid at first draw)`, amount: fmt(bps)});
+      flags.push({ok:true, text:"Contract price exceeds $500,000 and first draw is complete — 10 basis point bonus applies this period."});
+    } else {
+      flags.push({ok:false, text:"Contract price is $500,000 or less — basis-point bonus does not apply."});
+    }
+  } else {
+    flags.push({ok:false, text:"First draw has not occurred this period — the basis-point bonus is not yet payable."});
+  }
+
   return {total, lines, flags};
 }
 
@@ -358,6 +373,7 @@ function calcInspection(){
 function calcCustomHome(){
   const r = computeCustomHome({
     price: parseFloat(document.getElementById("c-price").value) || 0,
+    signed: document.getElementById("c-signed").value === "yes",
     firstDrawCompleted: document.getElementById("c-firstdraw").value === "yes",
   });
   renderResult("c-result", r.lines, r.total, r.flags);
@@ -408,7 +424,7 @@ function detailForType(type, inputs, quantity){
   } else if (type === "inspection"){
     return `Revenue ${fmt(inputs.revenue)} each${qSuffix}`;
   } else if (type === "customhome"){
-    return `Contract ${fmt(inputs.price)} — first draw ${inputs.firstDrawCompleted ? "completed" : "not yet reached"}${qSuffix}`;
+    return `Contract ${fmt(inputs.price)} — ${inputs.signed ? "signed" : "not yet signed"}, first draw ${inputs.firstDrawCompleted ? "completed" : "not yet reached"}${qSuffix}`;
   } else if (type === "remodel"){
     return `Project ${fmt(inputs.price)}${inputs.completed ? " (completed)" : " (not completed)"}${qSuffix}`;
   }
@@ -469,7 +485,8 @@ function openEntryForm(existingEntry){
   } else if (type === "customhome"){
     html = `
       <div class="row">
-        <div class="field"><label>Signed contract price ($, excl. land/change orders)</label><input type="number" id="f-chprice" value="${inp ? inp.price : 650000}" min="0" step="1000"></div>
+        <div class="field"><label>Contract price ($, excl. land/change orders)</label><input type="number" id="f-chprice" value="${inp ? inp.price : 650000}" min="0" step="1000"></div>
+        <div class="field"><label>Contract signed this period?</label><select id="f-signed"><option value="yes" ${inp && !inp.signed ? "" : "selected"}>Yes</option><option value="no" ${inp && !inp.signed ? "selected" : ""}>No</option></select></div>
         <div class="field"><label>First draw completed this period?</label><select id="f-firstdraw"><option value="yes" ${inp && !inp.firstDrawCompleted ? "" : "selected"}>Yes</option><option value="no" ${inp && !inp.firstDrawCompleted ? "selected" : ""}>No</option></select></div>
         ${qtyField}
       </div>
@@ -515,6 +532,7 @@ function submitEntry(type){
   } else if (type === "customhome"){
     inputs = {
       price: parseFloat(document.getElementById("f-chprice").value) || 0,
+      signed: document.getElementById("f-signed").value === "yes",
       firstDrawCompleted: document.getElementById("f-firstdraw").value === "yes",
     };
   } else if (type === "remodel"){
