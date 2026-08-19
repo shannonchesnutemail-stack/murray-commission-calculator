@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Revup Marketing — Invoice Builder</title>
+<title>Revup Marketing — Bonus Invoice Builder</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.4.0/exceljs.min.js"></script>
@@ -98,9 +98,9 @@
 <body>
 <div class="wrap">
   <header>
-    <div class="kicker">Independent Contractor Agreement — Section 4.2</div>
-    <h1>Revup Marketing — Commission Invoice Builder</h1>
-    <p>Estimate referral commissions per service line, set monthly goals, combine them into one picture, and build your final invoice.</p>
+    <div class="kicker">Independent Contractor Agreement — Compensation Section</div>
+    <h1>Revup Marketing — Bonus Invoice Builder</h1>
+    <p>Estimate referral bonuses per service line, set monthly goals, combine them into one picture, and build your final invoice.</p>
   </header>
 
   <div class="tabs">
@@ -153,8 +153,8 @@
 
     <hr class="divider">
 
-    <div class="section-heading">Referral Commission Line Items</div>
-    <div class="clause">Add every commission event that applies for the month. Use the Quantity field for repeated identical events (e.g., 10 inspections scheduled at once). For Custom Home entries, the $200 signing bonus and the 10bp bonus are tracked separately since they're often earned in different months (signing vs. first draw). Give each entry a "Client / Reference" note so you can match it back to the right client on the invoice. Every entry can be edited or removed afterward.</div>
+    <div class="section-heading">Referral Bonus Line Items</div>
+    <div class="clause">Add every bonus event that applies for the month. Use the Quantity field for repeated identical events (e.g., 10 inspections scheduled at once). For Custom Home entries, the $200 signing bonus and the 10bp bonus are tracked separately since they're often earned in different months (signing vs. first draw). Give each entry a "Client / Reference" note so you can match it back to the right client on the invoice. Every entry can be edited or removed afterward.</div>
 
     <div class="row">
       <div class="field" style="flex:0 0 200px;">
@@ -179,14 +179,14 @@
       </thead>
       <tbody id="mp-tbody"></tbody>
     </table>
-    <div id="mp-empty" class="empty-state">No commission entries yet — add one above.</div>
+    <div id="mp-empty" class="empty-state">No bonus entries yet — add one above.</div>
 
     <div class="subgrid" id="mp-subgrid"></div>
 
     <div class="grand-total">
       <div>
-        Referral Commission Subtotal
-        <span class="sub">Sum of all commission entries above</span>
+        Referral Bonus Subtotal
+        <span class="sub">Sum of all bonus entries above</span>
       </div>
       <div id="mp-grandtotal">$0.00</div>
     </div>
@@ -223,7 +223,7 @@
     <div class="grand-total">
       <div>
         Total Amount Due
-        <span class="sub">Referral commissions + expense reimbursement</span>
+        <span class="sub">Referral bonuses + expense reimbursement</span>
       </div>
       <div id="grand-total-all">$0.00</div>
     </div>
@@ -234,7 +234,7 @@
     <div class="row">
       <div class="field">
         <label>Additional Notes (optional, appears on invoice)</label>
-        <input type="text" id="sv-name" placeholder="e.g., Monthly Referral Commissions & Expenses">
+        <input type="text" id="sv-name" placeholder="e.g., Monthly Referral Bonuses & Expenses">
       </div>
     </div>
     <button class="btn" onclick="exportPDF()">Generate Invoice PDF</button>
@@ -245,21 +245,21 @@
   <!-- ROOFING CALCULATOR -->
   <div class="panel" id="roofing">
     <div class="section-heading">Roofing Calculator</div>
-    <div class="clause">Flat $50 per inspection scheduled · Flat $100 per approved signed contract + 3% of contract price upon completion (only if contract ≥ $10,000) · Flat $200 per signed maintenance contract. All fields default to unchecked/zero so nothing gets counted by accident — check only what actually applies.</div>
+    <div class="clause">Flat $100 per inspection scheduled · Flat $150 per newly approved contract stage · Flat $50 per signed maintenance contract · An additional 3% completion bonus of the contract price, paid upon receipt of final payment (only if contract ≥ $5,000) — earned in addition to the flat fees above. All fields default to unchecked/zero so nothing gets counted by accident — check only what actually applies.</div>
 
     <div class="checkbox-row"><input type="checkbox" id="r-inspScheduled"><label for="r-inspScheduled">Inspection scheduled</label></div>
-    <div class="checkbox-row"><input type="checkbox" id="r-contractApproved"><label for="r-contractApproved">Contract approved / signed</label></div>
+    <div class="checkbox-row"><input type="checkbox" id="r-contractApproved"><label for="r-contractApproved">Contract stage newly approved</label></div>
     <div class="row">
       <div class="field">
         <label>Contracted job price ($)</label>
         <input type="number" id="r-price" value="0" min="0" step="100">
-        <div class="hint">3% completion bonus only applies if this is $10,000 or more.</div>
+        <div class="hint">3% completion bonus only applies if this is $5,000 or more.</div>
       </div>
       <div class="field">
-        <label>Job completed?</label>
+        <label>Final payment received?</label>
         <select id="r-completed">
-          <option value="no" selected>No — not completed</option>
-          <option value="yes">Yes — job completed</option>
+          <option value="no" selected>No — final payment not received</option>
+          <option value="yes">Yes — final payment received</option>
         </select>
       </div>
       <div class="field" style="max-width:160px;">
@@ -294,7 +294,7 @@
   <!-- INSPECTION CALCULATOR -->
   <div class="panel" id="inspection">
     <div class="section-heading">Inspection Calculator</div>
-    <div class="clause">Flat $100 per closed inspection, paid at completion. If a single inspection's revenue exceeds $2,000, Contractor receives 10% of that inspection's <strong>own</strong> revenue <strong>instead of</strong> the $100 flat fee (whichever tier applies, not both). Add one row per inspection — over-$2,000 inspections are rarely identical amounts, so each is entered and calculated on its own.</div>
+    <div class="clause">Flat $100 fee, paid upon successful scheduling, for each inspection with a contract price of at least $600. If that inspection's own revenue reaches $2,000 or more, Contractor <strong>also</strong> earns an additional bonus of 10% of that inspection's total revenue — <strong>on top of</strong> the $100 flat fee, not instead of it. Add one row per inspection — amounts are rarely identical, so each is entered and calculated on its own.</div>
     <div id="i-items-list"></div>
     <button type="button" class="btn secondary small" onclick="addInspectionRow('i-items-list','i-item-input')">+ Add Another Inspection</button>
     <div style="margin-top:14px;"></div>
@@ -323,7 +323,7 @@
   <!-- CUSTOM HOME CALCULATOR -->
   <div class="panel" id="customhome">
     <div class="section-heading">Custom Home Calculator</div>
-    <div class="clause">Flat $200 paid <strong>at the time the contract is signed</strong>. Separately, 10 basis points (0.10%) of the initial contract price applies if it exceeds $500,000 (excluding land and change orders) — <strong>this additional bonus is payable at first draw</strong>, independent of the signing bonus. Defaults are unchecked/zero — nothing counts until you set it.</div>
+    <div class="clause">Flat $200 paid <strong>at the time the contract is signed</strong>. Separately, 10 basis points (0.10%) of the initial contract price applies if it equals or exceeds $500,000 (excluding land and future change orders) — <strong>this additional bonus is payable at first draw</strong>, independent of the signing bonus. Defaults are unchecked/zero — nothing counts until you set it.</div>
     <div class="row">
       <div class="field">
         <label>Contract price ($, excl. land/change orders)</label>
@@ -374,17 +374,17 @@
   <!-- REMODEL CALCULATOR -->
   <div class="panel" id="remodel">
     <div class="section-heading">Remodel Calculator</div>
-    <div class="clause">2% of project price · Eligible only upon project completion · Project must be at least $100,000 to qualify. Defaults are unchecked/zero — nothing counts until you set it.</div>
+    <div class="clause">2% of project price, paid upon collection of final payment · Project price must be at least $100,000 to qualify. Defaults are unchecked/zero — nothing counts until you set it.</div>
     <div class="row">
       <div class="field">
         <label>Remodel project price ($)</label>
         <input type="number" id="m-price" value="0" min="0" step="1000">
       </div>
       <div class="field">
-        <label>Project completed?</label>
+        <label>Final payment collected?</label>
         <select id="m-completed">
-          <option value="no" selected>No — not completed</option>
-          <option value="yes">Yes — completed</option>
+          <option value="no" selected>No — final payment not collected</option>
+          <option value="yes">Yes — final payment collected</option>
         </select>
       </div>
       <div class="field" style="max-width:160px;">
@@ -429,7 +429,7 @@
       </div>
       <div class="grand-total">
         <div>
-          Combined Estimated Monthly Commission
+          Combined Estimated Monthly Bonus
           <span class="sub">Roofing + Inspection + Custom Home + Remodel</span>
         </div>
         <div id="combined-grandtotal">$0.00</div>
@@ -446,7 +446,7 @@
   </div>
 
   <footer>
-    Figures reflect the referral bonus schedule as written in Section 4.2 of the Independent Contractor Agreement.
+    Figures reflect the referral bonus schedule as written in the Compensation section of the Independent Contractor Agreement.
     This tool is a planning and invoicing aid only — final payout is governed by the signed Agreement and Company's verification of each qualifying sale.
   </footer>
 </div>
@@ -498,21 +498,21 @@ function renderResult(elId, lines, total, flags){
 
 function computeRoofing({inspScheduled, contractApproved, price, completed, maintenance}){
   let total = 0, lines = [], flags = [];
-  if (inspScheduled){ total += 50; lines.push({label:"Inspection scheduled (flat)", amount: fmt(50)}); }
-  if (contractApproved){ total += 100; lines.push({label:"Contract approved/signed (flat)", amount: fmt(100)}); }
+  if (inspScheduled){ total += 100; lines.push({label:"Inspection scheduled (flat)", amount: fmt(100)}); }
+  if (contractApproved){ total += 150; lines.push({label:"Contract stage newly approved (flat)", amount: fmt(150)}); }
   if (contractApproved && completed){
-    if (price >= 10000){
+    if (price >= 5000){
       const pct = price * 0.03;
       total += pct;
-      lines.push({label:`Completion bonus — 3% of ${fmt(price)}`, amount: fmt(pct)});
-      flags.push({ok:true, text:"Contract price meets the $10,000 minimum — 3% completion bonus applies."});
+      lines.push({label:`Completion bonus — 3% of ${fmt(price)} (paid upon final payment)`, amount: fmt(pct)});
+      flags.push({ok:true, text:"Contract price meets the $5,000 minimum — 3% completion bonus applies upon receipt of final payment, in addition to the flat fees above."});
     } else {
-      flags.push({ok:false, text:"Contract price is below the $10,000 minimum — 3% completion bonus does NOT apply."});
+      flags.push({ok:false, text:"Contract price is below the $5,000 minimum — 3% completion bonus does NOT apply."});
     }
   } else if (contractApproved && !completed){
-    flags.push({ok:false, text:"Job not yet completed — 3% completion bonus not yet earned."});
+    flags.push({ok:false, text:"Final payment not yet received — 3% completion bonus not yet earned."});
   }
-  if (maintenance){ total += 200; lines.push({label:"Maintenance contract signed (flat)", amount: fmt(200)}); }
+  if (maintenance){ total += 50; lines.push({label:"Maintenance contract signed (flat)", amount: fmt(50)}); }
   if (!inspScheduled && !contractApproved && !maintenance){
     flags.push({ok:false, text:"No qualifying milestones selected."});
   }
@@ -527,28 +527,31 @@ function computeInspection({items}){
   if (list.length === 0){
     flags.push({ok:false, text:"No inspections entered — nothing to calculate yet."});
   } else {
-    let flatCount = 0, flatTotal = 0, overCount = 0;
-    list.forEach(function(revenue){
-      if (revenue > 2000){
-        const fee = revenue * 0.10;
-        total += fee;
-        overCount += 1;
-        lines.push({label:`Inspection over $2,000 — 10% of ${fmt(revenue)} (replaces flat fee)`, amount: fmt(fee)});
-      } else {
-        flatCount += 1;
-        flatTotal += 100;
-      }
-    });
-    if (flatCount > 0){
+    const qualifying = list.filter(v => v >= 600);
+    const belowMin = list.length - qualifying.length;
+
+    if (qualifying.length > 0){
+      const flatTotal = qualifying.length * 100;
       total += flatTotal;
       lines.push({
-        label: `Closed inspection${flatCount > 1 ? "s" : ""} at $2,000 or under (flat $100 each)${flatCount > 1 ? ` ×${flatCount}` : ""}`,
+        label: `Inspection scheduling fee${qualifying.length > 1 ? "s" : ""} — $600 minimum met (flat $100 each)${qualifying.length > 1 ? ` ×${qualifying.length}` : ""}`,
         amount: fmt(flatTotal),
       });
-      flags.push({ok:true, text:`${flatCount} inspection${flatCount > 1 ? "s are" : " is"} $2,000 or less — the $100 flat fee applies to each.`});
+      flags.push({ok:true, text:`${qualifying.length} inspection${qualifying.length > 1 ? "s met" : " met"} the $600 minimum contract price — $100 flat scheduling fee applies to each.`});
     }
-    if (overCount > 0){
-      flags.push({ok:true, text:`${overCount} inspection${overCount > 1 ? "s" : ""} exceed${overCount > 1 ? "" : "s"} $2,000 — each is paid 10% of its own revenue instead of the $100 flat fee. Amounts are calculated individually since they are rarely identical.`});
+
+    const bonusTier = qualifying.filter(v => v >= 2000);
+    bonusTier.forEach(function(revenue){
+      const bonus = revenue * 0.10;
+      total += bonus;
+      lines.push({label:`Inspection revenue bonus — 10% of ${fmt(revenue)} (in addition to the $100 scheduling fee)`, amount: fmt(bonus)});
+    });
+    if (bonusTier.length > 0){
+      flags.push({ok:true, text:`${bonusTier.length} inspection${bonusTier.length > 1 ? "s" : ""} reached $2,000 or more in revenue — an additional 10% bonus of that inspection's own revenue applies on top of the $100 scheduling fee, not instead of it.`});
+    }
+
+    if (belowMin > 0){
+      flags.push({ok:false, text:`${belowMin} inspection${belowMin > 1 ? "s are" : " is"} below the $600 minimum contract price — no fee applies.`});
     }
   }
   flags.push({ok:true, text:"Any additional services generated by this lead are paid at the current agreed rate for that service line (not calculated here)."});
@@ -567,13 +570,13 @@ function computeCustomHome({price, signed, firstDrawCompleted}){
   }
 
   if (firstDrawCompleted){
-    if (price > 500000){
+    if (price >= 500000){
       const bps = price * 0.0010; // 10 basis points = 0.10%
       total += bps;
       lines.push({label:`Basis-point bonus — 10 bp of ${fmt(price)} (paid at first draw)`, amount: fmt(bps)});
-      flags.push({ok:true, text:"Contract price exceeds $500,000 and first draw is complete — 10 basis point bonus applies this period."});
+      flags.push({ok:true, text:"Contract price equals or exceeds $500,000 and first draw is complete — 10 basis point bonus applies this period."});
     } else {
-      flags.push({ok:false, text:"Contract price is $500,000 or less — basis-point bonus does not apply."});
+      flags.push({ok:false, text:"Contract price is below $500,000 — basis-point bonus does not apply."});
     }
   } else {
     flags.push({ok:false, text:"First draw has not occurred this period — the basis-point bonus is not yet payable."});
@@ -587,12 +590,12 @@ function computeRemodel({price, completed}){
   if (price < 100000){
     flags.push({ok:false, text:"Project price is below the $100,000 minimum — remodel bonus does not qualify."});
   } else if (!completed){
-    flags.push({ok:false, text:"Project not yet completed — remodel bonus is not yet payable (eligible upon completion)."});
+    flags.push({ok:false, text:"Final payment not yet collected — remodel bonus is not yet payable (eligible upon collection of final payment)."});
   } else {
     const pct = price * 0.02;
     total += pct;
     lines.push({label:`Remodel bonus — 2% of ${fmt(price)}`, amount: fmt(pct)});
-    flags.push({ok:true, text:"Project meets the $100,000 minimum and is completed — 2% bonus applies."});
+    flags.push({ok:true, text:"Project meets the $100,000 minimum and final payment has been collected — 2% bonus applies."});
   }
   return {total, lines, flags};
 }
@@ -619,11 +622,13 @@ function detailForType(type, inputs, quantity){
   } else if (type === "inspection"){
     const list = (inputs.items || []).filter(v => v > 0);
     if (list.length === 0) return "No inspections entered";
-    const overAmts = list.filter(v => v > 2000);
-    const flatCount = list.length - overAmts.length;
+    const belowMin = list.filter(v => v < 600);
+    const flatOnly = list.filter(v => v >= 600 && v < 2000);
+    const bonusTier = list.filter(v => v >= 2000);
     const parts = [];
-    if (flatCount > 0) parts.push(`${flatCount} at $2,000 or under (flat $100 each)`);
-    if (overAmts.length > 0) parts.push(`${overAmts.length} over $2,000: ${overAmts.map(fmt).join(", ")} (10% each)`);
+    if (flatOnly.length > 0) parts.push(`${flatOnly.length} at $600–$1,999 (flat $100 each)`);
+    if (bonusTier.length > 0) parts.push(`${bonusTier.length} at $2,000+: ${bonusTier.map(fmt).join(", ")} ($100 flat + 10% bonus each)`);
+    if (belowMin.length > 0) parts.push(`${belowMin.length} below $600 minimum (no fee)`);
     return parts.join(" · ");
   } else if (type === "customhome"){
     return `Contract ${fmt(inputs.price)} — ${inputs.signed ? "signed" : "not yet signed"}, first draw ${inputs.firstDrawCompleted ? "completed" : "not yet reached"}${qSuffix}`;
@@ -854,7 +859,7 @@ async function exportGoalsToExcel(type){
     { header: "Goal Name", key: "name", width: 28 },
     { header: "Target Month", key: "month", width: 18 },
     { header: "Scenario Details", key: "detail", width: 45 },
-    { header: "Target Commission", key: "total", width: 20 },
+    { header: "Target Bonus", key: "total", width: 20 },
     { header: "Saved On", key: "savedAt", width: 16 },
   ];
 
@@ -942,12 +947,12 @@ function exportCombinedPDF(){
   doc.setFont("helvetica", "bold");
   doc.setFontSize(18);
   doc.setTextColor(30);
-  doc.text("Combined Monthly Commission Overview", 40, 50);
+  doc.text("Combined Monthly Bonus Overview", 40, 50);
 
   doc.setFont("helvetica", "normal");
   doc.setFontSize(9.5);
   doc.setTextColor(90);
-  doc.text("Revup Marketing — Referral Commission Estimate (Section 4.2)", 40, 66);
+  doc.text("Revup Marketing — Referral Bonus Estimate", 40, 66);
   doc.text("Generated: " + new Date().toLocaleDateString(), 40, 78);
   if (label){
     doc.setFont("helvetica", "italic");
@@ -963,7 +968,7 @@ function exportCombinedPDF(){
 
   doc.autoTable({
     startY: 118,
-    head: [["Service Line", "Details", "Estimated Commission"]],
+    head: [["Service Line", "Details", "Estimated Bonus"]],
     body: rows,
     styles: { font: "helvetica", fontSize: 10, cellPadding: 7 },
     headStyles: { fillColor: [43,43,43], textColor: 255, fontStyle: "bold" },
@@ -989,11 +994,11 @@ function exportCombinedPDF(){
   doc.setFontSize(8.5);
   doc.setTextColor(120);
   doc.text(
-    "Planning estimate only. Actual commission is determined by the signed Independent Contractor Agreement and Company verification of each qualifying sale.",
+    "Planning estimate only. Actual bonus amounts are determined by the signed Independent Contractor Agreement and Company verification of each qualifying sale.",
     40, y + 44, { maxWidth: 515 }
   );
 
-  const filenameBase = (label ? label.trim().replace(/[^a-z0-9]+/gi, "-").replace(/^-+|-+$/g, "") : "Combined-Commission-Overview");
+  const filenameBase = (label ? label.trim().replace(/[^a-z0-9]+/gi, "-").replace(/^-+|-+$/g, "") : "Combined-Bonus-Overview");
   doc.save(filenameBase + ".pdf");
 
   const toast = document.getElementById("combined-toast");
@@ -1001,7 +1006,7 @@ function exportCombinedPDF(){
   toast.textContent = `Saved "${filenameBase}.pdf".`;
 }
 
-/* ---------- Commission entries (Build Invoice tab: add / edit / remove / quantity / per-entry client note) ---------- */
+/* ---------- Bonus entries (Build Invoice tab: add / edit / remove / quantity / per-entry client note) ---------- */
 
 let mpEntries = []; // {id, type, quantity, inputs, clientNote, label, total, detail}
 let mpNextId = 1;
@@ -1035,10 +1040,10 @@ function openEntryForm(existingEntry){
   if (type === "roofing"){
     html = `
       <div class="checkbox-row"><input type="checkbox" id="f-inspScheduled" ${inp && inp.inspScheduled ? "checked" : ""}><label for="f-inspScheduled">Inspection scheduled</label></div>
-      <div class="checkbox-row"><input type="checkbox" id="f-contractApproved" ${inp && inp.contractApproved ? "checked" : ""}><label for="f-contractApproved">Contract approved / signed</label></div>
+      <div class="checkbox-row"><input type="checkbox" id="f-contractApproved" ${inp && inp.contractApproved ? "checked" : ""}><label for="f-contractApproved">Contract stage newly approved</label></div>
       <div class="row">
         <div class="field"><label>Contracted job price ($)</label><input type="number" id="f-price" value="${inp ? inp.price : 0}" min="0" step="100"></div>
-        <div class="field"><label>Job completed?</label><select id="f-completed"><option value="no" ${inp && inp.completed ? "" : "selected"}>No</option><option value="yes" ${inp && inp.completed ? "selected" : ""}>Yes</option></select></div>
+        <div class="field"><label>Final payment received?</label><select id="f-completed"><option value="no" ${inp && inp.completed ? "" : "selected"}>No</option><option value="yes" ${inp && inp.completed ? "selected" : ""}>Yes</option></select></div>
         ${qtyField}
       </div>
       <div class="checkbox-row"><input type="checkbox" id="f-maintenance" ${inp && inp.maintenance ? "checked" : ""}><label for="f-maintenance">Maintenance contract signed</label></div>
@@ -1047,7 +1052,7 @@ function openEntryForm(existingEntry){
       <button class="btn secondary" onclick="closeEntryForm()">Cancel</button>`;
   } else if (type === "inspection"){
     html = `
-      <div class="clause">Add one row per inspection. Rows at $2,000 or under are flat $100 each; rows over $2,000 pay 10% of that inspection's own revenue instead. Each is tracked and invoiced as its own line item since amounts are rarely identical.</div>
+      <div class="clause">Add one row per inspection. Every inspection of at least $600 earns a flat $100 scheduling fee; inspections that also reach $2,000 or more additionally earn a 10% bonus of that inspection's own revenue, on top of the flat fee. Each qualifying fee is tracked and invoiced as its own line item since amounts are rarely identical.</div>
       <div id="f-items-list"></div>
       <button type="button" class="btn secondary small" onclick="addInspectionRow('f-items-list','f-item-input')">+ Add Another Inspection</button>
       <div style="margin-top:14px;"></div>
@@ -1069,7 +1074,7 @@ function openEntryForm(existingEntry){
     html = `
       <div class="row">
         <div class="field"><label>Remodel project price ($)</label><input type="number" id="f-rmprice" value="${inp ? inp.price : 0}" min="0" step="1000"></div>
-        <div class="field"><label>Project completed?</label><select id="f-rmcompleted"><option value="no" ${inp && inp.completed ? "" : "selected"}>No</option><option value="yes" ${inp && inp.completed ? "selected" : ""}>Yes</option></select></div>
+        <div class="field"><label>Final payment collected?</label><select id="f-rmcompleted"><option value="no" ${inp && inp.completed ? "" : "selected"}>No</option><option value="yes" ${inp && inp.completed ? "selected" : ""}>Yes</option></select></div>
         ${qtyField}
       </div>
       ${clientField}
@@ -1096,11 +1101,13 @@ function submitEntry(type){
   const clientNote = document.getElementById("f-client").value.trim();
 
   if (type === "inspection"){
-    // Each inspection amount is tracked and invoiced as its own line item —
-    // over-$2,000 inspections are rarely identical, so they must never be
-    // combined/multiplied together. Flat-fee ($2,000-or-under) and
-    // revenue-tier (10%) fees are also kept as separate fee-type line items
-    // so invoice counts and subtotals stay accurate.
+    // Each inspection amount is tracked and invoiced individually — amounts
+    // are rarely identical, so they must never be combined/multiplied
+    // together. Every qualifying inspection (>= $600) earns a flat $100
+    // scheduling fee; inspections that also reach $2,000+ additionally earn
+    // a 10% revenue bonus ON TOP OF that flat fee (stacked, not instead of).
+    // The flat fee and the revenue bonus are kept as separate fee-type line
+    // items so invoice counts and subtotals stay accurate per fee type.
     const items = getInspectionItemsFrom("f-items-list", "f-item-input").filter(v => v > 0);
 
     if (editingEntryId){
@@ -1109,19 +1116,34 @@ function submitEntry(type){
     if (items.length > 0){
       const groupId = editingEntryId || mpNextId++;
       items.forEach(function(revenue){
-        const isOver = revenue > 2000;
-        const r = computeInspection({ items: [revenue] });
+        if (revenue < 600) return; // below the $600 minimum — no fee applies
         mpEntries.push({
           id: mpNextId++,
           groupId: groupId,
+          feeKind: "flat",
           type: "inspection",
           quantity: 1,
           inputs: { items: [revenue] },
           clientNote: clientNote,
-          label: isOver ? "Inspection (Revenue % Fee)" : "Inspection (Flat Fee)",
-          total: r.total,
-          detail: isOver ? `Revenue ${fmt(revenue)} — 10% fee (replaces flat fee)` : `Revenue ${fmt(revenue)} — $100 flat fee`,
+          label: "Inspection Scheduling Fee (Flat)",
+          total: 100,
+          detail: `Revenue ${fmt(revenue)} — $100 flat scheduling fee`,
         });
+        if (revenue >= 2000){
+          const bonus = revenue * 0.10;
+          mpEntries.push({
+            id: mpNextId++,
+            groupId: groupId,
+            feeKind: "bonus",
+            type: "inspection",
+            quantity: 1,
+            inputs: { items: [revenue] },
+            clientNote: clientNote,
+            label: "Inspection Revenue Bonus (10%)",
+            total: bonus,
+            detail: `Revenue ${fmt(revenue)} — additional 10% bonus (on top of the $100 flat fee)`,
+          });
+        }
       });
     }
 
@@ -1174,7 +1196,7 @@ function editEntry(id){
   document.getElementById("mp-type").value = entry.type;
   if (entry.type === "inspection"){
     const group = mpEntries.filter(function(e){ return e.groupId === entry.groupId; });
-    const items = group.map(function(e){ return e.inputs.items[0]; });
+    const items = group.filter(function(e){ return e.feeKind === "flat"; }).map(function(e){ return e.inputs.items[0]; });
     openEntryForm({ id: entry.groupId, type: "inspection", inputs: { items: items }, clientNote: entry.clientNote });
   } else {
     openEntryForm(entry);
@@ -1187,7 +1209,7 @@ function removeEntry(id){
 }
 
 function clearCurrentEntries(){
-  if ((mpEntries.length || exEntries.length) && !confirm("Clear all commission entries and expenses from this invoice?")) return;
+  if ((mpEntries.length || exEntries.length) && !confirm("Clear all bonus entries and expenses from this invoice?")) return;
   mpEntries = [];
   exEntries = [];
   renderMonthly();
@@ -1414,7 +1436,7 @@ function formatDateDisplay(iso){
 
 function exportPDF(){
   if (mpEntries.length === 0 && exEntries.length === 0){
-    showToast("Add at least one commission entry or expense before generating the invoice.", true);
+    showToast("Add at least one bonus entry or expense before generating the invoice.", true);
     return;
   }
   const missingClient = mpEntries.some(function(e){ return !e.clientNote; });
@@ -1472,12 +1494,12 @@ function exportPDF(){
 
   let y = 168;
 
-  // ---- Commission section ----
+  // ---- Bonus section ----
   if (mpEntries.length > 0){
     doc.setFont("helvetica", "bold");
     doc.setFontSize(12);
     doc.setTextColor(30);
-    doc.text("Referral Commission", 40, y);
+    doc.text("Referral Bonus", 40, y);
     y += 10;
 
     const commissionRows = mpEntries.map(function(e){
@@ -1504,7 +1526,7 @@ function exportPDF(){
     const commissionTotal = mpEntries.reduce(function(sum, e){ return sum + e.total; }, 0);
     doc.setFont("helvetica", "bold");
     doc.setFontSize(10.5);
-    doc.text("Commission Subtotal:", pageWidth - 200, y);
+    doc.text("Bonus Subtotal:", pageWidth - 200, y);
     doc.text(fmt(commissionTotal), pageWidth - 40, y, { align: "right" });
     y += 24;
   }
@@ -1569,7 +1591,7 @@ function exportPDF(){
   doc.setTextColor(120);
   if (missingClient){
     doc.setTextColor(150, 60, 60);
-    doc.text("Note: one or more commission entries are missing a Client / Reference — consider updating before submitting.", 40, y, { maxWidth: 515 });
+    doc.text("Note: one or more bonus entries are missing a Client / Reference — consider updating before submitting.", 40, y, { maxWidth: 515 });
     y += 14;
     doc.setTextColor(120);
   }
